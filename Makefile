@@ -15,7 +15,7 @@ compile:src/*/*.java
 	$(JAVAC) -cp $(CLASSPATH) -d ./bin ./src/*/*.java
 
 xx : compile
-	$(JAVA) -cp $(CLASSPATH):./bin global.Msql ./src/tests/queries.sql
+	$(JAVA) -cp $(CLASSPATH):./bin global.Msql tests/queries.sql
 
 clean:
 	rm -rf *.minibase bin
