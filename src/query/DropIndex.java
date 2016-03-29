@@ -1,11 +1,15 @@
 package query;
 
 import parser.AST_DropIndex;
+import global.Minibase;
+import index.HashIndex;
 
 /**
  * Execution plan for dropping indexes.
  */
 class DropIndex implements Plan {
+
+  private String fileName;
 
   /**
    * Optimizes the plan, given the parsed query.
@@ -13,7 +17,7 @@ class DropIndex implements Plan {
    * @throws QueryException if index doesn't exist
    */
   public DropIndex(AST_DropIndex tree) throws QueryException {
-
+    QueryCheck.indexExists(fileName = tree.getFileName());
   } // public DropIndex(AST_DropIndex tree) throws QueryException
 
   /**
@@ -21,8 +25,8 @@ class DropIndex implements Plan {
    */
   public void execute() {
 
-    // print the output message
-    System.out.println("(Not implemented)");
+    new HashIndex(fileName).deleteFile();
+    Minibase.SystemCatalog.dropIndex(fileName);
 
   } // public void execute()
 
