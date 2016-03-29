@@ -62,6 +62,8 @@ class CreateIndex implements Plan {
     scan.close();
 
     Minibase.SystemCatalog.createIndex(fileName, tableName, colName);
+
+    System.out.println("Index created.");
   } // public void execute()
 
 } // class CreateIndex implements Plan
