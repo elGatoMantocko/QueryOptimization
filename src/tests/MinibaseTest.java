@@ -12,6 +12,7 @@ import query.QueryException;
 
 import org.junit.Before;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -68,8 +69,18 @@ public class MinibaseTest {
     Minibase.DiskManager.closeDB();
   }
 
-  @Test
+  @Test @Ignore
   public void testCreateIndex() {
-    Assert.assertTrue("Not implemented", true == false);
+    // TODO: Set system.in to some InputStream and send that to the parser
+    // TODO: Create a table and create an index on that table (similar to queries.sql)
+    // TODO: Verify that the index has been created
+  }
+
+  @Test @Ignore
+  public void testDropIndex() {
+    // TODO: Set system.in to some InputStream and send that to the parser
+    // TODO: Create a table and create an index on that table (similar to queries.sql)
+    // TODO: Drop that index
+    // TODO: Verify that the index has been dropped
   }
 }
