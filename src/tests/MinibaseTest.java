@@ -54,15 +54,20 @@ public class MinibaseTest {
   @Test
   public void testCreateIndex() {
     // TODO: Verify that the index has been created
+    // set up index
     Msql sql = new Msql("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
     sql.execute();
   }
 
-  @Test @Ignore
+  @Test
   public void testDropIndex() {
-    // TODO: Drop IX_Age index
     // TODO: Verify that the index has been dropped
+    // set up index
     Msql sql = new Msql("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
+    sql.execute();
+
+    // drop index
+    sql = new Msql("DROP INDEX IX_Age;\nQUIT;");
     sql.execute();
   }
 }
