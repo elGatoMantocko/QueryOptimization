@@ -38,9 +38,6 @@ public class Msql implements MiniSqlTreeConstants {
   /** Command line prompt, when interactive. */
   protected static String PROMPT = "\nMSQL> ";
 
-  /** If the user creates an Msql object */
-  private String query;
-
   // --------------------------------------------------------------------------
 
   /**
@@ -149,11 +146,7 @@ public class Msql implements MiniSqlTreeConstants {
 
   } // public static void main(String[] args)
 
-  public Msql(String query) {
-    this.query = query;
-  }
-
-  public void execute() {
+  public static void execute(String query) {
     MiniSql parser;
     AST_Start node;
     SimpleCharStream stream;
