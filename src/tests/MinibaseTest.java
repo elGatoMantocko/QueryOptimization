@@ -21,7 +21,7 @@ import java.io.File;
 public class MinibaseTest {
 
   /** Default database file name. */
-  protected static String PATH = System.getProperty("user.name") + ".minibase";
+  protected static String PATH = System.getProperty("user.name") + ".junit.minibase";
 
   /** Default database size (in pages). */
   protected static int DB_SIZE = 10000;
@@ -39,7 +39,6 @@ public class MinibaseTest {
   private int reads;
   private int writes;
 
-  private MiniSql parser;
   private AST_Start node;
 
   @Before
@@ -47,6 +46,7 @@ public class MinibaseTest {
     // print the welcome message and load the database
     System.out.println("Minibase SQL Utility 1.0");
     if (new File(PATH).exists()) {
+      // this likely wont happen because tearDown destroys the DB
       System.out.println("Loading database...");
       new Minibase(PATH, DB_SIZE, BUF_SIZE, PRE_SIZE, "Clock", true);
     } else {
@@ -58,8 +58,6 @@ public class MinibaseTest {
     allocs = Minibase.DiskManager.getAllocCount();
     reads = Minibase.DiskManager.getReadCount();
     writes = Minibase.DiskManager.getWriteCount();
-
-    parser = new MiniSql(System.in);
   }
 
   @After
@@ -75,6 +73,7 @@ public class MinibaseTest {
     // TODO: Set system.in to some InputStream and send that to the parser
     // TODO: Create a table and create an index on that table (similar to queries.sql)
     // TODO: Verify that the index has been created
+    MiniSql parser;
   }
 
   @Test @Ignore
