@@ -65,11 +65,12 @@ public class MinibaseTest {
   @After
   public void tearDown() {
     // close the database and exit
-    System.out.println("Closing database...");
+    System.out.println("Destroying database...");
+    Minibase.DiskManager.destroyDB();
     Minibase.DiskManager.closeDB();
   }
 
-  @Test @Ignore
+  @Test
   public void testCreateIndex() {
     // TODO: Set system.in to some InputStream and send that to the parser
     // TODO: Create a table and create an index on that table (similar to queries.sql)
