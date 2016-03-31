@@ -19,7 +19,7 @@ xx : compile
 	$(JAVA) -cp $(CLASSPATH):./bin global.Msql queries/queries.sql
 
 test: compile
-	$(JAVA) -cp $(CLASSPATH):./bin org.junit.runner.JUnitCore tests.MinibaseTest
+	$(JAVA) -cp $(CLASSPATH):./bin org.junit.runner.JUnitCore tests.CreateIndexTest tests.DropIndexTest tests.InsertTest
 
 clean:
 	rm -rf *.minibase bin
