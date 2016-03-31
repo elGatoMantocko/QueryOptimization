@@ -85,13 +85,16 @@ public class MinibaseTest {
     // have to do a pseudo select
     while (scan.hasNext()) {
       Tuple t = scan.getNext();
-      if ((int)t.getField(0) == 1 && ((String)t.getField(1)).equals("Alice") && (float)t.getField(2) == 25.67) {
+      Object[] fields = t.getAllFields();
+      
+      if ((int)fields[0] == 1 && // sid
+          ((String)fields[1]).equals("Alice") && // name
+          (new Float((float)fields[2]).equals(new Float(25.67)))) { // age
         passes = true;
       }
     }
 
-    // this doesn't work yet
-    // Assert.assertTrue("No row with specified data was found.", passes);
+    Assert.assertTrue("No row with specified data was found.", passes);
   }
 
   @Test @Ignore
