@@ -5,7 +5,7 @@ import relop.Tuple;
 /**
  * Index descriptor, i.e. a strongly-typed version of an index catalog tuple.
  */
-class IndexDesc {
+public class IndexDesc {
 
   /** Name of the index file. */
   public String indexName;
