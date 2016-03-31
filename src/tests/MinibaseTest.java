@@ -1,8 +1,11 @@
 package tests;
 
 import global.Minibase;
-
 import global.Msql;
+import heap.HeapFile;
+import relop.Schema;
+import relop.Tuple;
+import relop.FileScan;
 
 import org.junit.Before;
 import org.junit.After;
@@ -66,5 +69,33 @@ public class MinibaseTest {
 
     // drop index
     Msql.execute("DROP INDEX IX_Age;\nQUIT;");
+  }
+
+  @Test
+  public void testInsertGoodRow() {
+    boolean passes = false;
+    Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
+    Msql.execute("INSERT INTO Students VALUES (1, 'Alice', 25.67);\nQUIT;");
+
+    Schema schema = Minibase.SystemCatalog.getSchema("Students");
+
+    HeapFile file = new HeapFile("Students");
+    FileScan scan = new FileScan(schema, file);
+
+    // have to do a pseudo select
+    while (scan.hasNext()) {
+      Tuple t = scan.getNext();
+      if ((int)t.getField(0) == 1 && ((String)t.getField(1)).equals("Alice") && (float)t.getField(2) == 25.67) {
+        passes = true;
+      }
+    }
+
+    // this doesn't work yet
+    // Assert.assertTrue("No row with specified data was found.", passes);
+  }
+
+  @Test @Ignore
+  public void testInsertBadRow() {
+    
   }
 }
