@@ -146,7 +146,7 @@ public class Msql implements MiniSqlTreeConstants {
 
   } // public static void main(String[] args)
 
-  public static void execute(String query) {
+  public static void execute(String query) throws TokenMgrError, ParseException, QueryException {
     MiniSql parser;
     AST_Start node;
     SimpleCharStream stream;
@@ -168,22 +168,8 @@ public class Msql implements MiniSqlTreeConstants {
     parser = new MiniSql(new MiniSqlTokenManager(stream));
 
     while (true) {
-      try {
-        node = parser.Start();
-        System.out.println();
-      } catch (TokenMgrError err) {
-        System.out.println("\nERROR: " + err.getMessage());
-        parser.ReInit(new MiniSqlTokenManager(stream));
-        continue;
-      } catch (ParseException exc) {
-        System.out.print("\nERROR: " + exc.getMessage());
-        if (exc.currentToken.kind == 0) {
-          System.out.println();
-          break;
-        }
-        parser.ReInit(new MiniSqlTokenManager(stream));
-        continue;
-      }
+      node = parser.Start();
+      System.out.println();
 
       // handle special commands
       if (node.isHelp) {
@@ -217,17 +203,8 @@ public class Msql implements MiniSqlTreeConstants {
       }
 
       // generate the plan and execute the query
-      try {
-        Plan plan = Optimizer.evaluate(node);
-        plan.execute();
-      } catch (QueryException exc) {
-        System.out.println("ERROR: " + exc.getMessage());
-        continue;
-      } catch (RuntimeException exc) {
-        exc.printStackTrace();
-        System.out.println();
-        break;
-      }
+      Plan plan = Optimizer.evaluate(node);
+      plan.execute();
     }
   }
 

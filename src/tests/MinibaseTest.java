@@ -3,6 +3,12 @@ package tests;
 import global.Minibase;
 import global.Msql;
 import heap.HeapFile;
+
+import parser.TokenMgrError;
+import parser.ParseException;
+
+import query.QueryException;
+
 import relop.Schema;
 import relop.Tuple;
 import relop.FileScan;
@@ -58,24 +64,48 @@ public class MinibaseTest {
   public void testCreateIndex() {
     // TODO: Verify that the index has been created
     // set up index
-    Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
+    try {
+      Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
+    } catch(ParseException e){
+      e.printStackTrace();
+    } catch(TokenMgrError e) {
+      e.printStackTrace();
+    } catch(QueryException e) {
+      e.printStackTrace();
+    }
   }
 
   @Test
   public void testDropIndex() {
     // TODO: Verify that the index has been dropped
-    // set up index
-    Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
+    try {
+      // set up index
+      Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
+      // drop index
+      Msql.execute("DROP INDEX IX_Age;\nQUIT;");
+    } catch(ParseException e){
+      e.printStackTrace();
+    } catch(TokenMgrError e) {
+      e.printStackTrace();
+    } catch(QueryException e) {
+      e.printStackTrace();
+    }
 
-    // drop index
-    Msql.execute("DROP INDEX IX_Age;\nQUIT;");
   }
 
   @Test
   public void testInsertGoodRow() {
     boolean passes = false;
-    Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
-    Msql.execute("INSERT INTO Students VALUES (1, 'Alice', 25.67);\nQUIT;");
+    try {
+      Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
+      Msql.execute("INSERT INTO Students VALUES (1, 'Alice', 25.67);\nQUIT;");
+    } catch(ParseException e){
+      e.printStackTrace();
+    } catch(TokenMgrError e) {
+      e.printStackTrace();
+    } catch(QueryException e) {
+      e.printStackTrace();
+    }
 
     Schema schema = Minibase.SystemCatalog.getSchema("Students");
 
@@ -97,8 +127,15 @@ public class MinibaseTest {
     Assert.assertTrue("No row with specified data was found.", passes);
   }
 
-  @Test @Ignore
-  public void testInsertBadRow() {
-    
+  @Test (expected=QueryException.class)
+  public void testInsertBadRow() throws QueryException {
+    try {
+      Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
+      Msql.execute("INSERT INTO Students VALUES (1, 'Alice', 25.67, 'test');\nQUIT;");
+    } catch(ParseException e){
+      e.printStackTrace();
+    } catch(TokenMgrError e) {
+      e.printStackTrace();
+    }
   }
 }
