@@ -59,7 +59,7 @@ public class MinibaseTest {
     Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
 
     for (IndexDesc desc : Minibase.SystemCatalog.getIndexes("Students")) {
-      if (desc.columnName.equals("Age")) {
+      if (desc.columnName.equals("Age") && desc.indexName.equals("IX_Age")) {
         passes = true;
       }
     }
@@ -74,7 +74,7 @@ public class MinibaseTest {
     Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
 
     for (IndexDesc desc : Minibase.SystemCatalog.getIndexes("Students")) {
-      if (desc.columnName.equals("Age")) {
+      if (desc.columnName.equals("Age") && desc.indexName.equals("IX_Age")) {
         passes = true;
       }
     }
@@ -84,7 +84,7 @@ public class MinibaseTest {
     Msql.execute("DROP INDEX IX_Age;\nQUIT;");
 
     for (IndexDesc desc : Minibase.SystemCatalog.getIndexes("Students")) {
-      if (desc.columnName.equals("Age")) {
+      if (desc.columnName.equals("Age") && desc.indexName.equals("IX_Age")) {
         Assert.fail("The index shouldn\'t exist.");
       }
     }
