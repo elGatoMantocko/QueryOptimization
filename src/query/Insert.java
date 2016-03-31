@@ -1,6 +1,9 @@
 package query;
 
+import global.Minibase;
+
 import parser.AST_Insert;
+import relop.Schema;
 
 /**
  * Execution plan for inserting tuples.
@@ -8,7 +11,8 @@ import parser.AST_Insert;
 class Insert implements Plan {
 
   private String fileName;
-  private Object[] values;
+  private Object[] fields;
+  private Schema schema;
 
   /**
    * Optimizes the plan, given the parsed query.
@@ -16,12 +20,14 @@ class Insert implements Plan {
    * @throws QueryException if table doesn't exists or values are invalid
    */
   public Insert(AST_Insert tree) throws QueryException {
+    this.fileName = tree.getFileName();
+    this.fields = tree.getValues();
 
-    fileName = tree.getFileName();
-    values = tree.getValues();
+    QueryCheck.tableExists(fileName);
 
-    QueryCheck.fileNotExists(fileName);
+    this.schema = Minibase.SystemCatalog.getSchema(fileName);
 
+    QueryCheck.insertValues(schema, fields);
   } // public Insert(AST_Insert tree) throws QueryException
 
   /**
