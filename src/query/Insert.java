@@ -7,12 +7,20 @@ import parser.AST_Insert;
  */
 class Insert implements Plan {
 
+  private String fileName;
+  private Object[] values;
+
   /**
    * Optimizes the plan, given the parsed query.
    * 
    * @throws QueryException if table doesn't exists or values are invalid
    */
   public Insert(AST_Insert tree) throws QueryException {
+
+    fileName = tree.getFileName();
+    values = tree.getValues();
+
+    QueryCheck.fileNotExists(fileName);
 
   } // public Insert(AST_Insert tree) throws QueryException
 
