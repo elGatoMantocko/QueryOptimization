@@ -13,6 +13,8 @@ import relop.Schema;
 import relop.Tuple;
 import relop.FileScan;
 
+import query.IndexDesc;
+
 import org.junit.Before;
 import org.junit.After;
 import org.junit.Ignore;
@@ -62,8 +64,6 @@ public class MinibaseTest {
 
   @Test
   public void testCreateIndex() {
-    // TODO: Verify that the index has been created
-    // set up index
     try {
       Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
     } catch(ParseException e){
@@ -73,15 +73,42 @@ public class MinibaseTest {
     } catch(QueryException e) {
       e.printStackTrace();
     }
+
+    boolean passes = false;
+
+    for (IndexDesc desc : Minibase.SystemCatalog.getIndexes("Students")) {
+      if (desc.columnName.equals("Age") && desc.indexName.equals("IX_Age")) {
+        passes = true;
+      }
+    }
+
+    Assert.assertTrue("The index was not built on the correct column.", passes);
   }
 
   @Test
   public void testDropIndex() {
-    // TODO: Verify that the index has been dropped
     try {
       // set up index
       Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
-      // drop index
+    } catch(ParseException e){
+      e.printStackTrace();
+    } catch(TokenMgrError e) {
+      e.printStackTrace();
+    } catch(QueryException e) {
+      e.printStackTrace();
+    }
+
+    boolean passes = false;
+
+    for (IndexDesc desc : Minibase.SystemCatalog.getIndexes("Students")) {
+      if (desc.columnName.equals("Age") && desc.indexName.equals("IX_Age")) {
+        passes = true;
+      }
+    }
+
+    Assert.assertTrue("The index was not built on the correct column.", passes);
+
+    try {
       Msql.execute("DROP INDEX IX_Age;\nQUIT;");
     } catch(ParseException e){
       e.printStackTrace();
@@ -91,6 +118,11 @@ public class MinibaseTest {
       e.printStackTrace();
     }
 
+    for (IndexDesc desc : Minibase.SystemCatalog.getIndexes("Students")) {
+      if (desc.columnName.equals("Age") && desc.indexName.equals("IX_Age")) {
+        Assert.fail("The index shouldn\'t exist.");
+      }
+    }
   }
 
   @Test
