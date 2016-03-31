@@ -3,12 +3,17 @@ package global;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.io.UnsupportedEncodingException;
 
 import parser.AST_Start;
 import parser.MiniSql;
 import parser.MiniSqlTreeConstants;
 import parser.ParseException;
 import parser.TokenMgrError;
+import parser.SimpleCharStream;
+import parser.MiniSqlTokenManager;
 import query.Optimizer;
 import query.Plan;
 import query.QueryException;
@@ -140,5 +145,90 @@ public class Msql implements MiniSqlTreeConstants {
     Minibase.DiskManager.closeDB();
 
   } // public static void main(String[] args)
+
+  public static void execute(String query) {
+    MiniSql parser;
+    AST_Start node;
+    SimpleCharStream stream;
+
+    // initialize the performance counters
+    int allocs = Minibase.DiskManager.getAllocCount();
+    int reads = Minibase.DiskManager.getReadCount();
+    int writes = Minibase.DiskManager.getWriteCount();
+
+    try {
+      stream = new SimpleCharStream(new ByteArrayInputStream(query.getBytes(StandardCharsets.UTF_8)), "UTF-8");
+    } catch(UnsupportedEncodingException e){
+      System.out.println("Encoding not supported.");
+      e.printStackTrace();
+
+      stream = new SimpleCharStream(new ByteArrayInputStream(query.getBytes(StandardCharsets.UTF_8)));
+    } 
+    
+    parser = new MiniSql(new MiniSqlTokenManager(stream));
+
+    while (true) {
+      try {
+        node = parser.Start();
+        System.out.println();
+      } catch (TokenMgrError err) {
+        System.out.println("\nERROR: " + err.getMessage());
+        parser.ReInit(new MiniSqlTokenManager(stream));
+        continue;
+      } catch (ParseException exc) {
+        System.out.print("\nERROR: " + exc.getMessage());
+        if (exc.currentToken.kind == 0) {
+          System.out.println();
+          break;
+        }
+        parser.ReInit(new MiniSqlTokenManager(stream));
+        continue;
+      }
+
+      // handle special commands
+      if (node.isHelp) {
+        System.out.println("HACK: just enter ';' to see available commands.");
+        continue;
+      }
+      if (node.isStats) {
+
+        // get the new stats
+        Minibase.BufferManager.flushAllPages();
+        int reads2 = Minibase.DiskManager.getReadCount();
+        int writes2 = Minibase.DiskManager.getWriteCount();
+        int allocs2 = Minibase.DiskManager.getAllocCount();
+        int pinned = BUF_SIZE - Minibase.BufferManager.getNumUnpinned();
+
+        // print the differences
+        System.out.println("reads  = " + (reads2 - reads));
+        System.out.println("writes = " + (writes2 - writes));
+        System.out.println("allocs = " + (allocs2 - allocs));
+        System.out.println("pinned = " + pinned);
+
+        // update the saved stats
+        reads = Minibase.DiskManager.getReadCount(); // ignore getAllocCount
+        writes = writes2;
+        allocs = allocs2;
+        continue;
+
+      }
+      if (node.isQuit) {
+        break;
+      }
+
+      // generate the plan and execute the query
+      try {
+        Plan plan = Optimizer.evaluate(node);
+        plan.execute();
+      } catch (QueryException exc) {
+        System.out.println("ERROR: " + exc.getMessage());
+        continue;
+      } catch (RuntimeException exc) {
+        exc.printStackTrace();
+        System.out.println();
+        break;
+      }
+    }
+  }
 
 } // public class Msql implements MiniSqlTreeConstants
