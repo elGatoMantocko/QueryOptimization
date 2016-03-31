@@ -1,8 +1,12 @@
 package query;
 
 import global.Minibase;
-
+import global.RID;
+import global.SearchKey;
 import parser.AST_Insert;
+import heap.HeapFile;
+import index.HashIndex;
+import relop.Tuple;
 import relop.Schema;
 
 /**
@@ -34,10 +38,17 @@ class Insert implements Plan {
    * Executes the plan and prints applicable output.
    */
   public void execute() {
+    Tuple tup = new Tuple(schema, fields);
+    HeapFile file = new HeapFile(fileName);
 
-    // print the output message
-    System.out.println("0 rows affected. (Not implemented)");
+    RID rid = file.insertRecord(tup.getData());
 
+    for (IndexDesc desc : Minibase.SystemCatalog.getIndexes(fileName)) {
+      HashIndex index = new HashIndex(desc.indexName);
+      index.insertEntry(new SearchKey(tup.getField(desc.columnName)), rid);
+    }
+
+    System.out.println("1 row inserted.");
   } // public void execute()
 
 } // class Insert implements Plan
