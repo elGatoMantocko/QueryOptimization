@@ -17,7 +17,7 @@ import query.IndexDesc;
 
 import org.junit.Before;
 import org.junit.After;
-import org.junit.Ignore;
+// import org.junit.Ignore;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -166,6 +166,7 @@ public class MinibaseTest {
 
   @Test
   public void testInsertBadRow() throws QueryException {
+    exception.expect(QueryException.class);
     try {
       Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
       Msql.execute("INSERT INTO Students VALUES (1, 'Alice', 25.67, 'test');\nQUIT;");
@@ -173,8 +174,6 @@ public class MinibaseTest {
       e.printStackTrace();
     } catch(TokenMgrError e) {
       e.printStackTrace();
-    } finally {
-      exception.expect(QueryException.class);
-    }
+    } 
   }
 }
