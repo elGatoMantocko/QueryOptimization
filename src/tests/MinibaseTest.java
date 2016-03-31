@@ -69,8 +69,25 @@ public class MinibaseTest {
 
   @Test
   public void testDropIndex() {
-    // TODO: Verify that the index has been dropped
+    boolean passes = false;
+
     Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
+
+    for (IndexDesc desc : Minibase.SystemCatalog.getIndexes("Students")) {
+      if (desc.columnName.equals("Age")) {
+        passes = true;
+      }
+    }
+
+    Assert.assertTrue("The index was not built on the correct column.", passes);
+
     Msql.execute("DROP INDEX IX_Age;\nQUIT;");
+
+    for (IndexDesc desc : Minibase.SystemCatalog.getIndexes("Students")) {
+      if (desc.columnName.equals("Age")) {
+        Assert.fail("The index shouldn\'t exist.");
+      }
+    }
+
   }
 }
