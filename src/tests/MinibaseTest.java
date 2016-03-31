@@ -19,9 +19,7 @@ import org.junit.Before;
 import org.junit.After;
 // import org.junit.Ignore;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.io.File;
 
@@ -41,9 +39,6 @@ public class MinibaseTest {
 
   /** Command line prompt, when interactive. */
   protected static String PROMPT = "\nMSQL> ";
-
-  @Rule
-  public final ExpectedException exception = ExpectedException.none();
 
   @Before
   public void setUp() {
@@ -164,9 +159,8 @@ public class MinibaseTest {
     Assert.assertTrue("No row with specified data was found.", passes);
   }
 
-  @Test
+  @Test (expected=QueryException.class)
   public void testInsertBadRow() throws QueryException {
-    exception.expect(QueryException.class);
     try {
       Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
       Msql.execute("INSERT INTO Students VALUES (1, 'Alice', 25.67, 'test');\nQUIT;");
