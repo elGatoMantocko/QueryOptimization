@@ -85,6 +85,40 @@ public class MinibaseTest {
     Assert.assertTrue("The index was not built on the correct column.", passes);
   }
 
+  @Test (expected=QueryException.class)
+  public void testCreateDuplicateNamedIndex() throws QueryException {
+    try {
+      Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
+      Msql.execute("CREATE INDEX IX_Age ON Students(Name);\nQUIT;");
+    } catch(ParseException e){
+      e.printStackTrace();
+    } catch(TokenMgrError e) {
+      e.printStackTrace();
+    } 
+  }
+
+  @Test (expected=QueryException.class)
+  public void testCreateIndexOnBadTable() throws QueryException {
+    try {
+      Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Grades(GPA);\nQUIT;");
+    } catch(ParseException e){
+      e.printStackTrace();
+    } catch(TokenMgrError e) {
+      e.printStackTrace();
+    }
+  }
+
+  @Test (expected=QueryException.class)
+  public void testCreateIndexOnBadColumn() throws QueryException{
+    try {
+      Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(GPA);\nQUIT;");
+    } catch(ParseException e){
+      e.printStackTrace();
+    } catch(TokenMgrError e) {
+      e.printStackTrace();
+    }
+  }
+
   @Test
   public void testDropIndex() {
     try {
@@ -123,6 +157,17 @@ public class MinibaseTest {
         Assert.fail("The index shouldn\'t exist.");
       }
     }
+  }
+
+  @Test (expected=QueryException.class)
+  public void testDropBadIndex() throws QueryException {
+    try {
+      Msql.execute("DROP INDEX IX_Age;\nQUIT;");
+    } catch(ParseException e){
+      e.printStackTrace();
+    } catch(TokenMgrError e) {
+      e.printStackTrace();
+    } 
   }
 
   @Test
