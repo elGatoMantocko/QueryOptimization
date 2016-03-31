@@ -1,8 +1,9 @@
 package tests;
 
 import global.Minibase;
-
 import global.Msql;
+
+import query.IndexDesc;
 
 import org.junit.Before;
 import org.junit.After;
@@ -53,18 +54,23 @@ public class MinibaseTest {
 
   @Test
   public void testCreateIndex() {
-    // TODO: Verify that the index has been created
-    // set up index
+    boolean passes = false;
+
     Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
+
+    for (IndexDesc desc : Minibase.SystemCatalog.getIndexes("Students")) {
+      if (desc.columnName.equals("Age")) {
+        passes = true;
+      }
+    }
+
+    Assert.assertTrue("The index was not built on the correct column.", passes);
   }
 
   @Test
   public void testDropIndex() {
     // TODO: Verify that the index has been dropped
-    // set up index
     Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
-
-    // drop index
     Msql.execute("DROP INDEX IX_Age;\nQUIT;");
   }
 }
