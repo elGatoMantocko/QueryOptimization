@@ -61,6 +61,6 @@ class Delete implements Plan {
     }
 
     scan.close();
-    System.out.println(rowCount + " row deleted.");
+    System.out.println(rowCount + " rows deleted.");
   } // public void execute()
 } // class Delete implements Plan
