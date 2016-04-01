@@ -83,8 +83,6 @@ public class DeleteTest extends MinibaseTest {
     } catch(TokenMgrError e) {
       e.printStackTrace();
     }
-
-    // TODO: verify that the row was deleted
   }
 
   @Test (expected=QueryException.class)
@@ -96,7 +94,5 @@ public class DeleteTest extends MinibaseTest {
     } catch(TokenMgrError e) {
       e.printStackTrace();
     }
-
-    // TODO: verify that the row was deleted
   }
 }
