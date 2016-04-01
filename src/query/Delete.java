@@ -3,7 +3,9 @@ package query;
 import parser.AST_Delete;
 
 import global.Minibase;
+import global.SearchKey;
 import heap.HeapFile;
+import index.HashIndex;
 import relop.Tuple;
 import relop.FileScan;
 import relop.Predicate;
@@ -56,6 +58,10 @@ class Delete implements Plan {
 
       if (andPasses) {
         file.deleteRecord(scan.getLastRID());
+        for (IndexDesc desc : Minibase.SystemCatalog.getIndexes(fileName)) {
+          HashIndex index = new HashIndex(desc.indexName);
+          index.deleteEntry(new SearchKey(t.getField(desc.columnName)), scan.getLastRID());
+        }
         rowCount++;
       }
     }
