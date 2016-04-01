@@ -14,7 +14,7 @@ import relop.FileScan;
  */
 class CreateIndex implements Plan {
 
-  private String fileName, tableName, colName;
+  private String fileName, indexName, colName;
 
   private Schema schema;
 
@@ -26,13 +26,13 @@ class CreateIndex implements Plan {
   public CreateIndex(AST_CreateIndex tree) throws QueryException {
 
     fileName = tree.getFileName();
-    tableName = tree.getIxTable();
+    indexName = tree.getIxTable();
     colName = tree.getIxColumn();
     schema = Minibase.SystemCatalog.getSchema(tree.getIxTable());
 
     // simple parameter check for each of the file names
     QueryCheck.fileNotExists(fileName);
-    QueryCheck.tableExists(tableName);
+    QueryCheck.tableExists(indexName);
     QueryCheck.columnExists(schema, colName);
 
     // check that the index doesn't already exist
@@ -51,7 +51,7 @@ class CreateIndex implements Plan {
    */
   public void execute() {
     HashIndex index = new HashIndex(fileName);
-    FileScan scan = new FileScan(schema, new HeapFile(tableName));
+    FileScan scan = new FileScan(schema, new HeapFile(indexName));
 
     int colNum = schema.fieldNumber(colName);
     while (scan.hasNext()) {
@@ -61,7 +61,7 @@ class CreateIndex implements Plan {
     
     scan.close();
 
-    Minibase.SystemCatalog.createIndex(fileName, tableName, colName);
+    Minibase.SystemCatalog.createIndex(fileName, indexName, colName);
 
     System.out.println("Index created.");
   } // public void execute()
