@@ -40,6 +40,37 @@ public class DeleteTest extends MinibaseTest {
     } catch(QueryException e) {
       e.printStackTrace();
     }
+
+    // TODO: verify that the row was deleted
   }
-  
+
+  @Test
+  public void testDeleteMultiRow() {
+    try {
+      Msql.execute("DELETE Students WHERE name = 'Chris' or name = 'Alice';\nQUIT;");
+    } catch(ParseException e){
+      e.printStackTrace();
+    } catch(TokenMgrError e) {
+      e.printStackTrace();
+    } catch(QueryException e) {
+      e.printStackTrace();
+    }
+
+    // TODO: verify that the row was deleted
+  }
+
+  @Test
+  public void testNoRowsToDelete() {
+    try {
+      Msql.execute("DELETE Students WHERE name = 'Elliott';\nQUIT;");
+    } catch(ParseException e){
+      e.printStackTrace();
+    } catch(TokenMgrError e) {
+      e.printStackTrace();
+    } catch(QueryException e) {
+      e.printStackTrace();
+    }
+
+    // TODO: verify that the row was deleted
+  }
 }
