@@ -55,7 +55,7 @@ public class DeleteTest extends MinibaseTest {
 
     while (scan.hasNext()) {
       Tuple t = scan.getNext();
-      Assert.assertNotEquals("Row with name 'Chris' wasn't deleted", "Chris", t.getField("name"));
+      Assert.assertFalse("Row with name 'Chris' wasn't deleted", "Chris".equals(t.getField("name")));
     }
 
     scan.close();
@@ -78,8 +78,8 @@ public class DeleteTest extends MinibaseTest {
 
     while (scan.hasNext()) {
       Tuple t = scan.getNext();
-      Assert.assertNotEquals("Row with name 'Chris' wasn't deleted", "Chris", t.getField("name"));
-      Assert.assertNotEquals("Row with name 'Alice' wasn't deleted", "Alice", t.getField("name"));
+      Assert.assertFalse("Row with name 'Chris' wasn't deleted", "Chris".equals(t.getField("name")));
+      Assert.assertFalse("Row with name 'Alice' wasn't deleted", "Alice".equals(t.getField("name")));
     }
 
     scan.close();
