@@ -73,4 +73,30 @@ public class DeleteTest extends MinibaseTest {
 
     // TODO: verify that the row was deleted
   }
+
+  @Test (expected=QueryException.class)
+  public void testDeleteTableDoesntExist() throws QueryException {
+    try {
+      Msql.execute("DELETE Grades WHERE gpa = '3.1';\nQUIT;");
+    } catch(ParseException e){
+      e.printStackTrace();
+    } catch(TokenMgrError e) {
+      e.printStackTrace();
+    }
+
+    // TODO: verify that the row was deleted
+  }
+
+  @Test (expected=QueryException.class)
+  public void testDeletePredicatesInvalid() throws QueryException {
+    try {
+      Msql.execute("DELETE Students WHERE gpa = 'Elliott';\nQUIT;");
+    } catch(ParseException e){
+      e.printStackTrace();
+    } catch(TokenMgrError e) {
+      e.printStackTrace();
+    }
+
+    // TODO: verify that the row was deleted
+  }
 }
