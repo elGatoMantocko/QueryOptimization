@@ -1,11 +1,20 @@
 package tests;
 
 import org.junit.Test;
+import org.junit.Assert;
 import org.junit.Before;
 
+import global.Minibase;
 import global.Msql;
+
+import heap.HeapFile;
+
+import relop.Tuple;
+import relop.FileScan;
+
 import parser.ParseException;
 import parser.TokenMgrError;
+
 import query.QueryException;
 
 public class DeleteTest extends MinibaseTest {
@@ -41,7 +50,15 @@ public class DeleteTest extends MinibaseTest {
       e.printStackTrace();
     }
 
-    // TODO: verify that the row was deleted
+    HeapFile file = new HeapFile("Students");
+    FileScan scan = new FileScan(Minibase.SystemCatalog.getSchema("Students"), file);
+
+    while (scan.hasNext()) {
+      Tuple t = scan.getNext();
+      Assert.assertNotEquals("Row with name 'Chris' wasn't deleted", "Chris", t.getField("name"));
+    }
+
+    scan.close();
   }
 
   @Test
@@ -56,7 +73,16 @@ public class DeleteTest extends MinibaseTest {
       e.printStackTrace();
     }
 
-    // TODO: verify that the row was deleted
+    HeapFile file = new HeapFile("Students");
+    FileScan scan = new FileScan(Minibase.SystemCatalog.getSchema("Students"), file);
+
+    while (scan.hasNext()) {
+      Tuple t = scan.getNext();
+      Assert.assertNotEquals("Row with name 'Chris' wasn't deleted", "Chris", t.getField("name"));
+      Assert.assertNotEquals("Row with name 'Alice' wasn't deleted", "Alice", t.getField("name"));
+    }
+
+    scan.close();
   }
 
   @Test
@@ -71,7 +97,18 @@ public class DeleteTest extends MinibaseTest {
       e.printStackTrace();
     }
 
-    // TODO: verify that the row was deleted
+    HeapFile file = new HeapFile("Students");
+    FileScan scan = new FileScan(Minibase.SystemCatalog.getSchema("Students"), file);
+    int rowCount = 0;
+
+    while (scan.hasNext()) {
+      scan.getNext();
+      rowCount++;
+    }
+
+    scan.close();
+
+    Assert.assertEquals("The number of rows didn't change", 5, rowCount);
   }
 
   @Test (expected=QueryException.class)
