@@ -77,7 +77,7 @@ public class DeleteTest extends MinibaseTest {
   @Test (expected=QueryException.class)
   public void testDeleteTableDoesntExist() throws QueryException {
     try {
-      Msql.execute("DELETE Grades WHERE gpa = '3.1';\nQUIT;");
+      Msql.execute("DELETE Bad;\nQUIT;");
     } catch(ParseException e){
       e.printStackTrace();
     } catch(TokenMgrError e) {
@@ -88,7 +88,7 @@ public class DeleteTest extends MinibaseTest {
   @Test (expected=QueryException.class)
   public void testDeletePredicatesInvalid() throws QueryException {
     try {
-      Msql.execute("DELETE Students WHERE gpa = 'Elliott';\nQUIT;");
+      Msql.execute("DELETE Students WHERE bad = 'Elliott';\nQUIT;");
     } catch(ParseException e){
       e.printStackTrace();
     } catch(TokenMgrError e) {
