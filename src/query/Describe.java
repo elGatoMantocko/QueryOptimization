@@ -1,6 +1,8 @@
 package query;
 
 import global.Minibase;
+import global.AttrType;
+import relop.Schema;
 
 import parser.AST_Describe;
 
@@ -25,7 +27,10 @@ class Describe implements Plan {
    * Executes the plan and prints applicable output.
    */
   public void execute() {
-    Minibase.SystemCatalog.getSchema(fileName).print();
+    Schema schema = Minibase.SystemCatalog.getSchema(fileName);
+    for (int i = 0; i < schema.getCount(); i++) {
+      System.out.println(schema.fieldName(i) + ": " + AttrType.toString(schema.fieldType(i)));
+    }
   } // public void execute()
 
 } // class Describe implements Plan
