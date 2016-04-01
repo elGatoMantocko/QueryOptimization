@@ -11,15 +11,29 @@ import relop.Tuple;
 import relop.FileScan;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class InsertTest extends MinibaseTest {
+
+  @Before
+  public void setUp() {
+    super.setUp();
+    try {
+      Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
+    } catch(ParseException e){
+      e.printStackTrace();
+    } catch(TokenMgrError e) {
+      e.printStackTrace();
+    } catch(QueryException e) {
+      e.printStackTrace();
+    }
+  }
   
   @Test
   public void testInsertGoodRow() {
     boolean passes = false;
     try {
-      Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
       Msql.execute("INSERT INTO Students VALUES (1, 'Alice', 25.67);\nQUIT;");
     } catch(ParseException e){
       e.printStackTrace();
@@ -52,7 +66,6 @@ public class InsertTest extends MinibaseTest {
   @Test (expected=QueryException.class)
   public void testInsertBadRow() throws QueryException {
     try {
-      Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");
       Msql.execute("INSERT INTO Students VALUES (1, 'Alice', 25.67, 'test');\nQUIT;");
     } catch(ParseException e){
       e.printStackTrace();
