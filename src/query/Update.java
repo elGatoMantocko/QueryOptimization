@@ -11,8 +11,6 @@ import relop.FileScan;
 import relop.Predicate;
 import relop.Schema;
 
-import java.util.ArrayList;
-
 /**
  * Execution plan for updating tuples.
  */
