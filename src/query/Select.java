@@ -16,6 +16,8 @@ class Select implements Plan {
   private SortKey[] orders;
   private Predicate[][] preds;
   private Schema schema;
+  private boolean explain;
+  private boolean distinct;
 
   /**
    * Optimizes the plan, given the parsed query.
@@ -29,6 +31,8 @@ class Select implements Plan {
     this.preds = tree.getPredicates();
     this.cols = tree.getColumns();
     this.schema = new Schema(0);
+    this.explain = tree.isExplain;
+    this.distinct = tree.isDistinct;
 
     for (String table : tables) {
       QueryCheck.tableExists(table);
