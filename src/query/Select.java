@@ -12,7 +12,10 @@ import relop.*;
 class Select implements Plan {
 
   private String[] tables;
+  private String[] cols;
   private SortKey[] orders;
+  private Predicate[][] preds;
+  private Schema schema;
 
   /**
    * Optimizes the plan, given the parsed query.
@@ -23,11 +26,21 @@ class Select implements Plan {
 
     this.tables = tree.getTables();
     this.orders = tree.getOrders();
+    this.preds = tree.getPredicates();
+    this.cols = tree.getColumns();
+    this.schema = new Schema(0);
 
     for (String table : tables) {
       QueryCheck.tableExists(table);
+      schema = Schema.join(schema, Minibase.SystemCatalog.getSchema(table));
     }
-    
+
+    QueryCheck.predicates(schema, preds);
+
+    for (String column : cols) {
+      QueryCheck.columnExists(schema, column);
+    }
+
   } // public Select(AST_Select tree) throws QueryException
 
   /**
