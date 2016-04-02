@@ -4,7 +4,12 @@ import global.Minibase;
 import global.SortKey;
 import heap.HeapFile;
 import parser.AST_Select;
-import relop.*;
+import relop.Iterator;
+import relop.Projection;
+import relop.Selection;
+import relop.SimpleJoin;
+import relop.Predicate;
+import relop.Schema;
 
 /**
  * Execution plan for selecting tuples.
@@ -18,6 +23,8 @@ class Select implements Plan {
   private Schema schema;
   private boolean explain;
   private boolean distinct;
+
+  private Iterator iter;
 
   /**
    * Optimizes the plan, given the parsed query.
@@ -34,6 +41,7 @@ class Select implements Plan {
     this.explain = tree.isExplain;
     this.distinct = tree.isDistinct;
 
+    // validate the query input
     for (String table : tables) {
       QueryCheck.tableExists(table);
       schema = Schema.join(schema, Minibase.SystemCatalog.getSchema(table));
@@ -45,15 +53,19 @@ class Select implements Plan {
       QueryCheck.columnExists(schema, column);
     }
 
+    // build the Iterator
+
   } // public Select(AST_Select tree) throws QueryException
 
   /**
    * Executes the plan and prints applicable output.
    */
   public void execute() {
-
-    // print the output message
-    System.out.println("0 rows affected. (Not implemented)");
+    if (explain) {
+      iter.explain(0);
+    }
+    
+    iter.execute();
 
   } // public void execute()
 
