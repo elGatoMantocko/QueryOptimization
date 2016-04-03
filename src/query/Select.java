@@ -135,9 +135,6 @@ class Select implements Plan {
     if (cols != null) {
       final_iterator = new Projection(final_iterator, fieldnums.toArray(new Integer[fieldnums.size()]));
     }
-
-    final_iterator.explain(0);
-
   } // public Select(AST_Select tree) throws QueryException
 
   /**
@@ -148,7 +145,7 @@ class Select implements Plan {
       final_iterator.explain(0);
     }
     
-    final_iterator.execute();
+    // final_iterator.execute();
     // System.out.println("(Not implemented)");
 
   } // public void execute()
