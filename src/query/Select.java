@@ -2,6 +2,7 @@ package query;
 
 import global.Minibase;
 import global.SortKey;
+import global.AttrOperator;
 import global.AttrType;
 import global.SearchKey;
 import heap.HeapFile;
@@ -33,8 +34,6 @@ class Select implements Plan {
   private boolean explain;
   private boolean distinct;
 
-  private Iterator iter;
-
   /**
    * Optimizes the plan, given the parsed query.
    * 
@@ -52,6 +51,7 @@ class Select implements Plan {
 
     HashMap<String, IndexDesc> indexes = new HashMap<String, IndexDesc>();
     HashMap<String, Iterator> iteratorMap = new HashMap<String, Iterator>();
+    ArrayList<Predicate> joinPreds = new ArrayList<Predicate>();
 
     // validate the query input
     for (String table : tables) {
@@ -96,6 +96,11 @@ class Select implements Plan {
           }
           else { // probably join predicates
             // these preds should be added to a 'join' arraylist
+            if (!joinPreds.contains(pred) && 
+                ((pred.getLtype() == AttrType.COLNAME && pred.getRtype() == AttrType.COLNAME) ||
+                (pred.getLtype() == AttrType.FIELDNO && pred.getRtype() == AttrType.FIELDNO))) {
+              joinPreds.add(pred);
+            }
           }
         }
         
@@ -108,10 +113,22 @@ class Select implements Plan {
           iteratorMap.put(entry.getKey(), new Selection(iteratorMap.get(entry.getKey()), predsArr));
         }
       }
-      entry.getValue().explain(0);
+    }
+
+    Iterator[] iters = iteratorMap.values().toArray(new Iterator[iteratorMap.size()]);
+    Predicate[] joinPredsArr = joinPreds.toArray(new Predicate[joinPreds.size()]);
+    if (iters.length > 1) {
+      SimpleJoin join = new SimpleJoin(iters[0], iters[1], joinPredsArr);
+
+      for (int i = 2; i < iters.length; i++) {
+        join = new SimpleJoin(join, iters[i], joinPredsArr);
+      }
+
+      join.explain(0);
     }
 
     System.out.println(iteratorMap);
+    System.out.println(joinPreds);
 
     // build the Iterator
 
