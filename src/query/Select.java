@@ -4,6 +4,7 @@ import global.Minibase;
 import global.SortKey;
 import heap.HeapFile;
 import parser.AST_Select;
+import relop.FileScan;
 import relop.Iterator;
 import relop.Projection;
 import relop.Selection;
@@ -44,7 +45,8 @@ class Select implements Plan {
     // validate the query input
     for (String table : tables) {
       QueryCheck.tableExists(table);
-      schema = Schema.join(schema, Minibase.SystemCatalog.getSchema(table));
+      Schema tableSchema = Minibase.SystemCatalog.getSchema(table);
+      schema = Schema.join(schema, tableSchema);
     }
 
     QueryCheck.predicates(schema, preds);
@@ -66,6 +68,7 @@ class Select implements Plan {
     }
     
     iter.execute();
+    // System.out.println("(Not implemented)");
 
   } // public void execute()
 
