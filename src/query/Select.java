@@ -33,9 +33,6 @@ class Select implements Plan {
   private boolean explain;
   private boolean distinct;
 
-  private HashMap<String, IndexDesc> indexes;
-  private HashMap<String, Iterator> iteratorMap;
-
   private Iterator iter;
 
   /**
@@ -53,8 +50,8 @@ class Select implements Plan {
     this.explain = tree.isExplain;
     this.distinct = tree.isDistinct;
 
-    this.indexes = new HashMap<String, IndexDesc>();
-    this.iteratorMap = new HashMap<String, Iterator>();
+    HashMap<String, IndexDesc> indexes = new HashMap<String, IndexDesc>();
+    HashMap<String, Iterator> iteratorMap = new HashMap<String, Iterator>();
 
     // validate the query input
     for (String table : tables) {
@@ -98,7 +95,7 @@ class Select implements Plan {
             }
           }
           else { // probably join predicates
-
+            // these preds should be added to a 'join' arraylist
           }
         }
         
