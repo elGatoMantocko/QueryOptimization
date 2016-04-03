@@ -77,8 +77,6 @@ class Select implements Plan {
       fieldnums.add(schema.fieldNumber(column));
     }
 
-    System.out.println(fieldnums);
-
     for (Map.Entry<String, Iterator> entry : iteratorMap.entrySet()) {
       for (int i = 0; i < preds.length; i++) {
         ArrayList<Predicate> orPreds = new ArrayList<Predicate>();
@@ -132,9 +130,6 @@ class Select implements Plan {
     } else {
       final_iterator = iters[0];
     }
-
-    System.out.println(iteratorMap);
-    System.out.println(joinPreds);
 
     // build the Iterator
     if (cols != null) {
