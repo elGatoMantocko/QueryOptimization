@@ -2,6 +2,7 @@ package query;
 
 import global.Minibase;
 import global.SortKey;
+import global.AttrType;
 import heap.HeapFile;
 import parser.AST_Select;
 import relop.FileScan;
@@ -12,10 +13,14 @@ import relop.SimpleJoin;
 import relop.Predicate;
 import relop.Schema;
 
+import java.util.ArrayList;
+
 /**
  * Execution plan for selecting tuples.
  */
 class Select implements Plan {
+
+  private ArrayList<String> joinList;
 
   private String[] tables;
   private String[] cols;
@@ -42,11 +47,24 @@ class Select implements Plan {
     this.explain = tree.isExplain;
     this.distinct = tree.isDistinct;
 
+    this.joinList = new ArrayList<String>();
+
     // validate the query input
     for (String table : tables) {
       QueryCheck.tableExists(table);
       Schema tableSchema = Minibase.SystemCatalog.getSchema(table);
       schema = Schema.join(schema, tableSchema);
+
+      // building list of tables to push selection on
+      for (Predicate[] orPreds : preds) {
+        for (Predicate pred : orPreds) {
+          if ((pred.getLtype() == 21 && tableSchema.fieldNumber((String)pred.getLeft()) != -1 || 
+              pred.getRtype() == 21 && tableSchema.fieldNumber((String)pred.getRight()) != -1) && 
+              !joinList.contains(table)) { // colname
+            joinList.add(table);
+          }
+        }
+      }
     }
 
     QueryCheck.predicates(schema, preds);
