@@ -35,7 +35,6 @@ class Select implements Plan {
 
   private HashMap<String, IndexDesc> indexes;
   private HashMap<String, Iterator> iteratorMap;
-  private HashMap<String, ArrayList<Predicate>> selectionPreds;
 
   private Iterator iter;
 
@@ -56,7 +55,6 @@ class Select implements Plan {
 
     this.indexes = new HashMap<String, IndexDesc>();
     this.iteratorMap = new HashMap<String, Iterator>();
-    this.selectionPreds = new HashMap<String, ArrayList<Predicate>>();
 
     // validate the query input
     for (String table : tables) {
@@ -80,15 +78,14 @@ class Select implements Plan {
 
     for (Map.Entry<String, Iterator> entry : iteratorMap.entrySet()) {
       for (int i = 0; i < preds.length; i++) {
+        ArrayList<Predicate> orPreds = new ArrayList<Predicate>();
+
         for (Predicate pred : preds[i]) {
           Schema tableSchema = Minibase.SystemCatalog.getSchema(entry.getKey());
 
           if (pred.validate(tableSchema)) {
-            if (!selectionPreds.containsKey(entry.getKey())) {
-              selectionPreds.put(entry.getKey(), new ArrayList<Predicate>());
-              selectionPreds.get(entry.getKey()).add(pred);
-            } else if (!selectionPreds.get(entry.getKey()).contains(pred)) {
-              selectionPreds.get(entry.getKey()).add(pred);
+            if (!orPreds.contains(pred)) {
+              orPreds.add(pred);
             }
 
             // build keyscan on tables with indexes on a row in the pred
@@ -98,22 +95,26 @@ class Select implements Plan {
               KeyScan scan = new KeyScan(tableSchema, index, new SearchKey(pred.getRight()), new HeapFile(desc.indexName));
               
               iteratorMap.put(entry.getKey(), scan);
-              
-              System.out.println(pred.toString() + " uses index " + desc.indexName);
             }
           }
+          else { // probably join predicates
+
+          }
+        }
+        
+        // evaluate predicates into a selection iterator here
+        if (!orPreds.isEmpty()) {
+          Predicate[] predsArr = orPreds.toArray(new Predicate[orPreds.size()]);
+
+          // this will build a selection using the iterator in the map
+          //  if the iterator is a selection that means there is at least one and statement in the predicates
+          iteratorMap.put(entry.getKey(), new Selection(iteratorMap.get(entry.getKey()), predsArr));
         }
       }
+      entry.getValue().explain(0);
     }
 
-    // push selecitons down
-    for (Map.Entry<String, ArrayList<Predicate>> tablePreds : selectionPreds.entrySet()) {
-      String tableName = tablePreds.getKey();
-      ArrayList<Predicate> predicates = tablePreds.getValue();
-      Predicate[] predsArr = predicates.toArray(new Predicate[predicates.size()]);
-
-      iteratorMap.put(tableName, new Selection(iteratorMap.get(tableName), predsArr));
-    }
+    System.out.println(iteratorMap);
 
     // build the Iterator
 
