@@ -34,6 +34,8 @@ class Select implements Plan {
   private boolean explain;
   private boolean distinct;
 
+  private Iterator final_iterator;
+
   /**
    * Optimizes the plan, given the parsed query.
    * 
@@ -69,9 +71,13 @@ class Select implements Plan {
 
     QueryCheck.predicates(schema, preds);
 
+    ArrayList<Integer> fieldnums = new ArrayList<Integer>();
     for (String column : cols) {
       QueryCheck.columnExists(schema, column);
+      fieldnums.add(schema.fieldNumber(column));
     }
+
+    System.out.println(fieldnums);
 
     for (Map.Entry<String, Iterator> entry : iteratorMap.entrySet()) {
       for (int i = 0; i < preds.length; i++) {
@@ -118,19 +124,24 @@ class Select implements Plan {
     Iterator[] iters = iteratorMap.values().toArray(new Iterator[iteratorMap.size()]);
     Predicate[] joinPredsArr = joinPreds.toArray(new Predicate[joinPreds.size()]);
     if (iters.length > 1) {
-      SimpleJoin join = new SimpleJoin(iters[0], iters[1], joinPredsArr);
+      final_iterator = new SimpleJoin(iters[0], iters[1], joinPredsArr);
 
       for (int i = 2; i < iters.length; i++) {
-        join = new SimpleJoin(join, iters[i], joinPredsArr);
+        final_iterator = new SimpleJoin(final_iterator, iters[i], joinPredsArr);
       }
-
-      join.explain(0);
+    } else {
+      final_iterator = iters[0];
     }
 
     System.out.println(iteratorMap);
     System.out.println(joinPreds);
 
     // build the Iterator
+    if (cols != null) {
+      final_iterator = new Projection(final_iterator, fieldnums.toArray(new Integer[fieldnums.size()]));
+    }
+
+    final_iterator.explain(0);
 
   } // public Select(AST_Select tree) throws QueryException
 
@@ -138,11 +149,11 @@ class Select implements Plan {
    * Executes the plan and prints applicable output.
    */
   public void execute() {
-    // if (explain) {
-    //   iter.explain(0);
-    // }
+    if (explain) {
+      final_iterator.explain(0);
+    }
     
-    // iter.execute();
+    final_iterator.execute();
     // System.out.println("(Not implemented)");
 
   } // public void execute()
