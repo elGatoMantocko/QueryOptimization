@@ -54,6 +54,11 @@ class Select implements Plan {
     HashMap<String, IndexDesc> indexes = new HashMap<String, IndexDesc>();
     HashMap<String, Iterator> iteratorMap = new HashMap<String, Iterator>();
     ArrayList<Predicate> joinPreds = new ArrayList<Predicate>();
+    ArrayList<Predicate[]> predsList = new ArrayList<Predicate[]>();
+
+    for (Predicate[] p : preds) {
+      predsList.add(p);
+    }
 
     // validate the query input
     for (String table : tables) {
@@ -122,6 +127,7 @@ class Select implements Plan {
         // this will build a selection using the iterator in the map
         //  if the iterator is a selection that means there is at least one and statement in the predicates
         if (canPushSelect) {
+          predsList.remove(preds[i]);
           iteratorMap.put(entry.getKey(), new Selection(iteratorMap.get(entry.getKey()), preds[i]));
         }
       }
@@ -133,9 +139,6 @@ class Select implements Plan {
 
     // if there is more than one iterator, we need to make some join(s)
     if (iters.length > 1) {
-      // ----------------------------------------------------------
-      // ----------------------------------------------------------
-      //  IS IT POSSIBLE TO CREATE A JOIN WITH AN EMPTY ITERATOR
       final_iterator = new SimpleJoin(iters[0], iters[1], joinPredsArr);
 
       for (int i = 2; i < iters.length; i++) {
