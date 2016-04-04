@@ -8,6 +8,9 @@ import query.QueryException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import relop.Tuple;
+
+import java.util.List;
 
 public class SelectTest extends MinibaseTest {
 
@@ -57,7 +60,8 @@ public class SelectTest extends MinibaseTest {
   @Test
   public void testSimpleSelectAll() {
     try {
-      Msql.execute("SELECT * FROM Foo;\nQUIT;");
+      List<Tuple> output = Msql.testableexecute("SELECT * FROM Foo;\nQUIT;");
+      Assert.assertNotEquals(0, output.size());
     } catch(ParseException e){
       e.printStackTrace();
       Assert.fail();

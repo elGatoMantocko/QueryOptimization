@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 import parser.AST_Start;
 import parser.MiniSql;
@@ -17,6 +18,8 @@ import parser.MiniSqlTokenManager;
 import query.Optimizer;
 import query.Plan;
 import query.QueryException;
+import query.TestablePlan;
+import relop.Tuple;
 
 /**
  * Command line MiniSQL front end, used interactively or driven by scripts.
@@ -206,6 +209,74 @@ public class Msql implements MiniSqlTreeConstants {
       Plan plan = Optimizer.evaluate(node);
       plan.execute();
     }
+  }
+
+  public static List<Tuple> testableexecute(String query) throws TokenMgrError, ParseException, QueryException {
+    MiniSql parser;
+    AST_Start node;
+    SimpleCharStream stream;
+
+    // initialize the performance counters
+    int allocs = Minibase.DiskManager.getAllocCount();
+    int reads = Minibase.DiskManager.getReadCount();
+    int writes = Minibase.DiskManager.getWriteCount();
+
+    try {
+      stream = new SimpleCharStream(new ByteArrayInputStream(query.getBytes(StandardCharsets.UTF_8)), "UTF-8");
+    } catch(UnsupportedEncodingException e){
+      System.out.println("Encoding not supported.");
+      e.printStackTrace();
+
+      stream = new SimpleCharStream(new ByteArrayInputStream(query.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    parser = new MiniSql(new MiniSqlTokenManager(stream));
+
+    while (true) {
+      node = parser.Start();
+      System.out.println();
+
+      // handle special commands
+      if (node.isHelp) {
+        System.out.println("HACK: just enter ';' to see available commands.");
+        continue;
+      }
+      if (node.isStats) {
+
+        // get the new stats
+        Minibase.BufferManager.flushAllPages();
+        int reads2 = Minibase.DiskManager.getReadCount();
+        int writes2 = Minibase.DiskManager.getWriteCount();
+        int allocs2 = Minibase.DiskManager.getAllocCount();
+        int pinned = BUF_SIZE - Minibase.BufferManager.getNumUnpinned();
+
+        // print the differences
+        System.out.println("reads  = " + (reads2 - reads));
+        System.out.println("writes = " + (writes2 - writes));
+        System.out.println("allocs = " + (allocs2 - allocs));
+        System.out.println("pinned = " + pinned);
+
+        // update the saved stats
+        reads = Minibase.DiskManager.getReadCount(); // ignore getAllocCount
+        writes = writes2;
+        allocs = allocs2;
+        continue;
+
+      }
+      if (node.isQuit) {
+        break;
+      }
+
+      // generate the plan and execute the query
+      Plan plan = Optimizer.evaluate(node);
+      if(plan instanceof TestablePlan) {
+        return ((TestablePlan) plan).testExecute();
+      } else {
+        plan.execute();
+        return null;
+      }
+    }
+    return null;
   }
 
 } // public class Msql implements MiniSqlTreeConstants

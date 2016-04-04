@@ -2,7 +2,6 @@ package query;
 
 import global.Minibase;
 import global.SortKey;
-import global.AttrOperator;
 import global.AttrType;
 import global.SearchKey;
 import heap.HeapFile;
@@ -24,7 +23,7 @@ import java.util.Map;
 /**
  * Execution plan for selecting tuples.
  */
-class Select implements Plan {
+class Select extends TestablePlan {
 
   private String[] tables;
   private String[] cols;
@@ -34,7 +33,7 @@ class Select implements Plan {
   private boolean explain;
   private boolean distinct;
 
-  private Iterator final_iterator;
+  private Iterator finalIterator;
 
   /**
    * Optimizes the plan, given the parsed query.
@@ -136,24 +135,24 @@ class Select implements Plan {
       // ----------------------------------------------------------
       // ----------------------------------------------------------
       //  IS IT POSSIBLE TO CREATE A JOIN WITH AN EMPTY ITERATOR
-      final_iterator = new SimpleJoin(iters[0], iters[1], joinPredsArr);
+      finalIterator = new SimpleJoin(iters[0], iters[1], joinPredsArr);
 
       for (int i = 2; i < iters.length; i++) {
-        final_iterator = new SimpleJoin(final_iterator, iters[i], joinPredsArr);
+        finalIterator = new SimpleJoin(finalIterator, iters[i], joinPredsArr);
       }
     } else {
       // if its just one, then the final iterator can be set to that iterator
-      final_iterator = iters[0];
+      finalIterator = iters[0];
     }
 
     // if the query is asking to project columns, build the projection
     if (cols != null && cols.length > 0) {
-      final_iterator = new Projection(final_iterator, fieldNums);
+      finalIterator = new Projection(finalIterator, fieldNums);
     }
 
     // explaining for testing purposes
-    // final_iterator.explain(0);
-
+    // finalIterator.explain(0);
+    setFinalIterator(finalIterator);
   } // public Select(AST_Select tree) throws QueryException
 
   /**
@@ -161,10 +160,10 @@ class Select implements Plan {
    */
   public void execute() {
     if (explain) {
-      final_iterator.explain(0);
+      finalIterator.explain(0);
     }
     
-    final_iterator.execute();
+    finalIterator.execute();
 
 
     // System.out.println("(Not implemented)");
