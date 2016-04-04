@@ -59,7 +59,7 @@ class Select implements Plan {
     for (String table : tables) {
       QueryCheck.tableExists(table);
       Schema tableSchema = Minibase.SystemCatalog.getSchema(table);
-      schema = Schema.join(schema, tableSchema);
+      schema = Schema.join(tableSchema, schema);
 
       // this could possibly be bad if there are multiple
       //  indexes with different names that have the same column names
