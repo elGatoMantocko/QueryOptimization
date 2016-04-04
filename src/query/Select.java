@@ -3,6 +3,7 @@ package query;
 import global.Minibase;
 import global.SortKey;
 import global.AttrType;
+import global.AttrOperator;
 import global.SearchKey;
 import heap.HeapFile;
 import parser.AST_Select;
@@ -17,7 +18,10 @@ import relop.Predicate;
 import relop.Schema;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Map;
 
 /**
@@ -52,7 +56,11 @@ class Select extends TestablePlan {
 
     HashMap<String, IndexDesc> indexes = new HashMap<String, IndexDesc>();
     HashMap<String, Iterator> iteratorMap = new HashMap<String, Iterator>();
-    ArrayList<Predicate> joinPreds = new ArrayList<Predicate>();
+    ArrayList<Predicate[]> predsList = new ArrayList<Predicate[]>();
+
+    for (Predicate[] p : preds) {
+      predsList.add(p);
+    }
 
     // validate the query input
     for (String table : tables) {
@@ -107,38 +115,45 @@ class Select extends TestablePlan {
               iteratorMap.put(entry.getKey(), scan);
             }
           }
-          else {
-            // these preds should be added to a 'join' arraylist
-            //  this doesn't quite work yet
-            if (!joinPreds.contains(pred) && 
-                ((pred.getLtype() == AttrType.COLNAME && pred.getRtype() == AttrType.COLNAME) ||
-                (pred.getLtype() == AttrType.FIELDNO && pred.getRtype() == AttrType.FIELDNO))) {
-              joinPreds.add(pred);
-            }
-          }
         }
         
         // this will build a selection using the iterator in the map
         //  if the iterator is a selection that means there is at least one and statement in the predicates
         if (canPushSelect) {
+          predsList.remove(preds[i]);
           iteratorMap.put(entry.getKey(), new Selection(iteratorMap.get(entry.getKey()), preds[i]));
         }
       }
     }
 
     Iterator[] iters = iteratorMap.values().toArray(new Iterator[iteratorMap.size()]);
-    // naively take all of the join predicates (this is wrong)
-    Predicate[] joinPredsArr = joinPreds.toArray(new Predicate[joinPreds.size()]);
 
     // if there is more than one iterator, we need to make some join(s)
     if (iters.length > 1) {
-      // ----------------------------------------------------------
-      // ----------------------------------------------------------
-      //  IS IT POSSIBLE TO CREATE A JOIN WITH AN EMPTY ITERATOR
-      finalIterator = new SimpleJoin(iters[0], iters[1], joinPredsArr);
+
+      HashMap<Predicate[], Integer> score = new HashMap<Predicate[], Integer>();
+      for (Predicate[] candidate : predsList) {
+        score.put(candidate, new Integer(0));
+        for (Predicate pred : candidate) {
+          if (pred.getLtype() == AttrType.COLNAME && pred.getRtype() == AttrType.COLNAME && pred.getOper() == AttrOperator.EQ) {
+            score.put(candidate, new Integer(score.get(candidate) + 1));
+          }
+        }
+      }
+
+      List<Map.Entry<Predicate[], Integer>> entryList = new ArrayList<>();
+      entryList.addAll(score.entrySet());
+      Collections.sort(entryList, new Comparator<Map.Entry<Predicate[], Integer>>() {
+        @Override
+        public int compare(Map.Entry<Predicate[], Integer> left, Map.Entry<Predicate[], Integer> right) {
+          return right.getValue() - left.getValue();
+        }
+      });
+
+      finalIterator = new SimpleJoin(iters[0], iters[1], entryList.get(0).getKey());
 
       for (int i = 2; i < iters.length; i++) {
-        finalIterator = new SimpleJoin(finalIterator, iters[i], joinPredsArr);
+        finalIterator = new SimpleJoin(finalIterator, iters[i], entryList.get(0).getKey());
       }
     } else {
       // if its just one, then the final iterator can be set to that iterator
