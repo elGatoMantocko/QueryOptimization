@@ -159,7 +159,7 @@ class Select implements Plan {
     }
 
     // explaining for testing purposes
-    final_iterator.explain(0);
+    // final_iterator.explain(0);
 
   } // public Select(AST_Select tree) throws QueryException
 
