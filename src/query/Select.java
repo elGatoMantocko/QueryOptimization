@@ -1,21 +1,10 @@
 package query;
 
-import global.Minibase;
-import global.SortKey;
-import global.AttrType;
-import global.AttrOperator;
-import global.SearchKey;
+import global.*;
 import heap.HeapFile;
 import parser.AST_Select;
 import index.HashIndex;
-import relop.KeyScan;
-import relop.FileScan;
-import relop.Iterator;
-import relop.Projection;
-import relop.Selection;
-import relop.SimpleJoin;
-import relop.Predicate;
-import relop.Schema;
+import relop.*;
 
 import java.util.HashMap;
 import java.util.List;
