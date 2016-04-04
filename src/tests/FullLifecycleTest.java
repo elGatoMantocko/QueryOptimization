@@ -51,13 +51,14 @@ public class FullLifecycleTest extends MinibaseTest {
                             "explain SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0;\n" +
                             "explain SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0 OR sid = gsid AND points <= 2.5;\n" +
                             "explain SELECT * FROM Students, Grades WHERE sid = gsid AND age = 30.0;\n" +
-                            "STATS;\n" +
+                            "STATS\n" +
 //                            "QUIT;");
 //            Msql.execute(//bad query
-                            "SELECT sid FROM Students, Bad;\n" +
+                            "SELECT * FROM Students, Bad;\n" +
                             "QUIT;");
         } catch(Exception e) {
-            Msql.execute("DESCRIBE Students;\n" +
+            Msql.execute("STATS\n" +
+                    "DESCRIBE Students;\n" +
                     "UPDATE Students SET sid = 5 WHERE name = 'Chris';\n" +
                     "DELETE Students WHERE name = 'Chris';\n" +
                     "DROP INDEX IX_Age;\n" +
