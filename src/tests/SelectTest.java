@@ -77,7 +77,8 @@ public class SelectTest extends MinibaseTest {
   @Test
   public void testSimpleSelectProject() {
     try {
-      Msql.execute("SELECT a FROM Foo;\nQUIT;");
+      List<Tuple> output = Msql.testableexecute("SELECT a FROM Foo;\nQUIT;");
+      Assert.assertTrue(0 < output.size());
     } catch(ParseException e){
       e.printStackTrace();
       Assert.fail();
@@ -93,7 +94,8 @@ public class SelectTest extends MinibaseTest {
   @Test
   public void testSimpleSelectSinglePred() {
     try {
-      Msql.execute("SELECT * FROM Foo WHERE a = 1;\nQUIT;");
+      List<Tuple> output = Msql.testableexecute("SELECT * FROM Foo WHERE a = 1;\nQUIT;");
+      Assert.assertTrue(0 < output.size());
     } catch(ParseException e){
       e.printStackTrace();
       Assert.fail();
@@ -109,7 +111,8 @@ public class SelectTest extends MinibaseTest {
   @Test
   public void testSimpleSelectAndPred() {
     try {
-      Msql.execute("SELECT * FROM Foo WHERE a = 1 AND b = 2;\nQUIT;");
+      List<Tuple> output = Msql.testableexecute("SELECT * FROM Foo WHERE a = 1 AND b = 2;\nQUIT;");
+      Assert.assertTrue(0 < output.size());
     } catch(ParseException | QueryException | TokenMgrError e){
       e.printStackTrace();
       Assert.fail();
@@ -119,7 +122,8 @@ public class SelectTest extends MinibaseTest {
   @Test
   public void testSelectCrossOneAndPred() {
     try {
-      Msql.execute("SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0;\nQUIT;");
+      List<Tuple> output = Msql.testableexecute("SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0;\nQUIT;");
+      Assert.assertTrue(0 < output.size());
     } catch(ParseException | TokenMgrError | QueryException e){
       e.printStackTrace();
       Assert.fail();
@@ -129,7 +133,8 @@ public class SelectTest extends MinibaseTest {
   @Test
   public void testSelectCrossWithOrPred() {
     try {
-      Msql.execute("SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0 OR sid = gsid AND points <= 2.5;\nQUIT;");
+      List<Tuple> output = Msql.testableexecute("SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0 OR sid = gsid AND points <= 2.5;\nQUIT;");
+      Assert.assertTrue(0 < output.size());
     } catch(ParseException e){
       e.printStackTrace();
       Assert.fail();
@@ -145,7 +150,8 @@ public class SelectTest extends MinibaseTest {
   @Test
   public void testSelectFooComplexPred() {
     try {
-      Msql.execute("SELECT * FROM Foo WHERE a = 1 and b = 2 or c = 3 and d = 4 and e = 5;\nQUIT;");
+      List<Tuple> output = Msql.testableexecute("SELECT * FROM Foo WHERE a = 1 and b = 2 or c = 3 and d = 4 and e = 5;\nQUIT;");
+      Assert.assertTrue(0 < output.size());
     } catch(ParseException e){
       e.printStackTrace();
       Assert.fail();
@@ -161,7 +167,8 @@ public class SelectTest extends MinibaseTest {
   @Test
   public void testSelectStudentsGradesAge() {
     try {
-      Msql.execute("SELECT * FROM Students, Grades WHERE sid = gsid AND age = 30.0;\nQUIT;");
+      List<Tuple> output = Msql.testableexecute("SELECT * FROM Students, Grades WHERE sid = gsid AND age = 30.0;\nQUIT;");
+      Assert.assertTrue(0 < output.size());
     } catch (ParseException e) {
       e.printStackTrace();
       Assert.fail();
