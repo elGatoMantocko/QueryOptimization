@@ -54,6 +54,12 @@ public class SelectTest extends MinibaseTest {
   }
 
   @Test
+  public void testSelectNoTuples() throws Exception {
+    List<Tuple> output = Msql.testableexecute("SELECT * FROM Foo WHERE a = 5;\nQUIT;");
+    Assert.assertTrue(0 == output.size());
+  }
+
+  @Test
   public void testSimpleSelectAll() throws Exception {
     List<Tuple> output = Msql.testableexecute("SELECT * FROM Foo;\nQUIT;");
     Assert.assertTrue(0 < output.size());
