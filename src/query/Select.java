@@ -79,15 +79,22 @@ class Select extends TestablePlan {
       iteratorMap.put(table, new FileScan(tableSchema, file));
     }
 
-    // check that the predicates are valid
-    QueryCheck.predicates(schema, preds);
-
-    // have to convert the column names to column numbers
     Integer[] fieldNums = new Integer[cols.length];
-    for (int i = 0; i < cols.length; i++) {
-      // validate the column
-      QueryCheck.columnExists(schema, cols[i]);
-      fieldNums[i] = schema.fieldNumber(cols[i]);
+    // check that the predicates are valid
+    try {
+      QueryCheck.predicates(schema, preds);
+
+      // have to convert the column names to column numbers
+      for (int i = 0; i < cols.length; i++) {
+        // validate the column
+        QueryCheck.columnExists(schema, cols[i]);
+        fieldNums[i] = schema.fieldNumber(cols[i]);
+      }
+    } catch(QueryException e){
+      for (Iterator i : iteratorMap.values()) {
+        i.close();
+      }
+      throw e;
     }
 
     // for each table being joined
