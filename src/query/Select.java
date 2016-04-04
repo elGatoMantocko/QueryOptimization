@@ -172,7 +172,6 @@ class Select implements Plan {
     }
     
     final_iterator.execute();
-    final_iterator.close();
     // System.out.println("(Not implemented)");
 
   } // public void execute()
