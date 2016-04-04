@@ -1,9 +1,8 @@
 JDKPATH = /usr
 LIBPATH = ./lib/bufmgr.jar:./lib/diskmgr.jar:./lib/heap.jar:./lib/index.jar:./lib/relop.jar
-JUNITPATH = /Applications/IntelliJ\ IDEA\ 15.app/Contents/lib/junit-4.12.jar
-HAMCRESTPATH = /Applications/IntelliJ\ IDEA\ 15.app/Contents/lib/hamcrest-core-1.3.jar
+JUNITPATH = /usr/share/java/junit4.jar
 
-CLASSPATH = .:..:$(LIBPATH):$(JUNITPATH):$(HAMCRESTPATH)
+CLASSPATH = .:..:$(LIBPATH):$(JUNITPATH)
 BINPATH = $(JDKPATH)/bin
 JAVAC = $(JDKPATH)/bin/javac 
 JAVA  = $(JDKPATH)/bin/java 
