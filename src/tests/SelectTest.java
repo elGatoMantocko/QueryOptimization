@@ -1,14 +1,9 @@
 package tests;
 
-import global.Minibase;
 import global.Msql;
-import heap.HeapFile;
 import parser.TokenMgrError;
 import parser.ParseException;
 import query.QueryException;
-import relop.Schema;
-import relop.Tuple;
-import relop.FileScan;
 
 import org.junit.Assert;
 import org.junit.Before;

@@ -165,6 +165,8 @@ class Select implements Plan {
     }
     
     final_iterator.execute();
+
+
     // System.out.println("(Not implemented)");
 
   } // public void execute()
