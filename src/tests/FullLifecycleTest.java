@@ -36,30 +36,34 @@ public class FullLifecycleTest extends MinibaseTest {
     }
     @Test
     public void testAll() throws Exception {
-        Msql.execute(
-                "CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\n" +
-                "CREATE INDEX IX_Age ON Students(Age);\n" +
-                "INSERT INTO Students VALUES (1, 'Alice', 25.67);\n" +
-                "INSERT INTO Students VALUES (2, 'Chris', 12.34);\n" +
-                "INSERT INTO Students VALUES (3, 'Bob', 30.0);\n" +
-                "INSERT INTO Students VALUES (4, 'Andy', 50.0);\n" +
-                "INSERT INTO Students VALUES (5, 'Ron', 30.0);\n" +
-                "CREATE INDEX IX_Name ON Students(Name);\n" +
-                        "explain SELECT * FROM Students;\n" +
-                        //"explain SELECT * FROM Students WHERE age = 30.0;\n" +
-//                "explain SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0;\n" +
-                "explain SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0 OR sid = gsid AND points <= 2.5;\n" +
-                //"explain SELECT * FROM Students, Grades WHERE sid = gsid AND age = 30.0;\n" +
-                "STATS\n" +
-                //bad query
-                //"SELECT sid, bad FROM Grades, Students;\n" +
-
-                "DESCRIBE Students;\n" +
-                "UPDATE Students SET sid = 5 WHERE name = 'Chris';\n" +
-                "DELETE Students WHERE name = 'Chris';\n" +
-                "DROP INDEX IX_Age;\n" +
-                "DROP INDEX IX_Name;\n" +
-                "DROP TABLE Students;\n" +
-                "QUIT;");
+        try {
+            Msql.execute(
+                    "CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\n" +
+                            "CREATE INDEX IX_Age ON Students(Age);\n" +
+                            "INSERT INTO Students VALUES (1, 'Alice', 25.67);\n" +
+                            "INSERT INTO Students VALUES (2, 'Chris', 12.34);\n" +
+                            "INSERT INTO Students VALUES (3, 'Bob', 30.0);\n" +
+                            "INSERT INTO Students VALUES (4, 'Andy', 50.0);\n" +
+                            "INSERT INTO Students VALUES (5, 'Ron', 30.0);\n" +
+                            "CREATE INDEX IX_Name ON Students(Name);\n" +
+                            "explain SELECT * FROM Students;\n" +
+                            "explain SELECT * FROM Students WHERE age = 30.0;\n" +
+                            "explain SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0;\n" +
+                            "explain SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0 OR sid = gsid AND points <= 2.5;\n" +
+                            "explain SELECT * FROM Students, Grades WHERE sid = gsid AND age = 30.0;\n" +
+                            "STATS;\n" +
+//                            "QUIT;");
+//            Msql.execute(//bad query
+                            "SELECT sid FROM Students, Bad;\n" +
+                            "QUIT;");
+        } catch(Exception e) {
+            Msql.execute("DESCRIBE Students;\n" +
+                    "UPDATE Students SET sid = 5 WHERE name = 'Chris';\n" +
+                    "DELETE Students WHERE name = 'Chris';\n" +
+                    "DROP INDEX IX_Age;\n" +
+                    "DROP INDEX IX_Name;\n" +
+                    "DROP TABLE Students;\n" +
+                    "QUIT;");
+        }
     }
 }
