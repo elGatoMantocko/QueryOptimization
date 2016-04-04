@@ -91,17 +91,13 @@ class Select implements Plan {
       // for all of the and predicates
       for (int i = 0; i < preds.length; i++) {
         // lets build a list of all of the passable or preds
-        ArrayList<Predicate> orPreds = new ArrayList<Predicate>();
+        boolean canPushSelect = true;
 
         // for all of the predicates in the or list
         for (Predicate pred : preds[i]) {
           // if the predicate is valid for the current table's schema
           //  add it to the list of or predicates to push the selection down
-          if (pred.validate(tableSchema)) {
-            if (!orPreds.contains(pred)) {
-              orPreds.add(pred);
-            }
-
+          if (canPushSelect = canPushSelect && pred.validate(tableSchema)) {
             // build keyscan on tables with indexes on a row in the pred
             //  if there is an index on the predicate's left value
             if (indexes.containsKey(((String)pred.getLeft()).toLowerCase())) {
@@ -123,13 +119,10 @@ class Select implements Plan {
           }
         }
         
-        // evaluate predicates into a selection iterator here
-        if (!orPreds.isEmpty()) {
-          Predicate[] predsArr = orPreds.toArray(new Predicate[orPreds.size()]);
-
-          // this will build a selection using the iterator in the map
-          //  if the iterator is a selection that means there is at least one and statement in the predicates
-          iteratorMap.put(entry.getKey(), new Selection(iteratorMap.get(entry.getKey()), predsArr));
+        // this will build a selection using the iterator in the map
+        //  if the iterator is a selection that means there is at least one and statement in the predicates
+        if (canPushSelect) {
+          iteratorMap.put(entry.getKey(), new Selection(iteratorMap.get(entry.getKey()), preds[i]));
         }
       }
     }
