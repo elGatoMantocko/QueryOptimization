@@ -51,26 +51,26 @@ class Select extends TestablePlan {
       predsList.add(p);
     }
 
-    // validate the query input
-    for (String table : tables) {
-      QueryCheck.tableExists(table);
-      Schema tableSchema = Minibase.SystemCatalog.getSchema(table);
-      schema = Schema.join(tableSchema, schema);
-
-      // this could possibly be bad if there are multiple
-      //  indexes with different names that have the same column names
-      for (IndexDesc desc : Minibase.SystemCatalog.getIndexes(table)) {
-        indexes.put(desc.columnName.toLowerCase(), desc);
-      }
-
-      // create a new filescan out of the current table
-      HeapFile file = new HeapFile(table);
-      iteratorMap.put(table, new FileScan(tableSchema, file));
-    }
-
     Integer[] fieldNums = new Integer[cols.length];
     // check that the predicates are valid
     try {
+      // validate the query input
+      for (String table : tables) {
+        QueryCheck.tableExists(table);
+        Schema tableSchema = Minibase.SystemCatalog.getSchema(table);
+        schema = Schema.join(tableSchema, schema);
+
+        // this could possibly be bad if there are multiple
+        //  indexes with different names that have the same column names
+        for (IndexDesc desc : Minibase.SystemCatalog.getIndexes(table)) {
+          indexes.put(desc.columnName.toLowerCase(), desc);
+        }
+
+        // create a new filescan out of the current table
+        HeapFile file = new HeapFile(table);
+        iteratorMap.put(table, new FileScan(tableSchema, file));
+      }
+
       QueryCheck.predicates(schema, preds);
 
       // have to convert the column names to column numbers
