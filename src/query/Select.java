@@ -61,35 +61,49 @@ class Select implements Plan {
       Schema tableSchema = Minibase.SystemCatalog.getSchema(table);
       schema = Schema.join(schema, tableSchema);
 
+      // this could possibly be bad if there are multiple
+      //  indexes with different names that have the same column names
       for (IndexDesc desc : Minibase.SystemCatalog.getIndexes(table)) {
         indexes.put(desc.columnName.toLowerCase(), desc);
       }
 
+      // create a new filescan out of the current table
       HeapFile file = new HeapFile(table);
-      iteratorMap.put(table, new FileScan(schema, file));
+      iteratorMap.put(table, new FileScan(tableSchema, file));
     }
 
+    // check that the predicates are valid
     QueryCheck.predicates(schema, preds);
 
-    ArrayList<Integer> fieldnums = new ArrayList<Integer>();
-    for (String column : cols) {
-      QueryCheck.columnExists(schema, column);
-      fieldnums.add(schema.fieldNumber(column));
+    // have to convert the column names to column numbers
+    Integer[] fieldNums = new Integer[cols.length];
+    for (int i = 0; i < cols.length; i++) {
+      // validate the column
+      QueryCheck.columnExists(schema, cols[i]);
+      fieldNums[i] = schema.fieldNumber(cols[i]);
     }
 
+    // for each table being joined
     for (Map.Entry<String, Iterator> entry : iteratorMap.entrySet()) {
+      // save the schema for this table
+      Schema tableSchema = Minibase.SystemCatalog.getSchema(entry.getKey());
+
+      // for all of the and predicates
       for (int i = 0; i < preds.length; i++) {
+        // lets build a list of all of the passable or preds
         ArrayList<Predicate> orPreds = new ArrayList<Predicate>();
 
+        // for all of the predicates in the or list
         for (Predicate pred : preds[i]) {
-          Schema tableSchema = Minibase.SystemCatalog.getSchema(entry.getKey());
-
+          // if the predicate is valid for the current table's schema
+          //  add it to the list of or predicates to push the selection down
           if (pred.validate(tableSchema)) {
             if (!orPreds.contains(pred)) {
               orPreds.add(pred);
             }
 
             // build keyscan on tables with indexes on a row in the pred
+            //  if there is an index on the predicate's left value
             if (indexes.containsKey(((String)pred.getLeft()).toLowerCase())) {
               IndexDesc desc = indexes.get(pred.getLeft());
               HashIndex index = new HashIndex(desc.indexName);
@@ -98,8 +112,9 @@ class Select implements Plan {
               iteratorMap.put(entry.getKey(), scan);
             }
           }
-          else { // probably join predicates
+          else {
             // these preds should be added to a 'join' arraylist
+            //  this doesn't quite work yet
             if (!joinPreds.contains(pred) && 
                 ((pred.getLtype() == AttrType.COLNAME && pred.getRtype() == AttrType.COLNAME) ||
                 (pred.getLtype() == AttrType.FIELDNO && pred.getRtype() == AttrType.FIELDNO))) {
@@ -120,22 +135,30 @@ class Select implements Plan {
     }
 
     Iterator[] iters = iteratorMap.values().toArray(new Iterator[iteratorMap.size()]);
+    // naively take all of the join predicates (this is wrong)
     Predicate[] joinPredsArr = joinPreds.toArray(new Predicate[joinPreds.size()]);
+
+    // if there is more than one iterator, we need to make some join(s)
     if (iters.length > 1) {
+      // ----------------------------------------------------------
+      // ----------------------------------------------------------
+      //  IS IT POSSIBLE TO CREATE A JOIN WITH AN EMPTY ITERATOR
       final_iterator = new SimpleJoin(iters[0], iters[1], joinPredsArr);
 
       for (int i = 2; i < iters.length; i++) {
         final_iterator = new SimpleJoin(final_iterator, iters[i], joinPredsArr);
       }
     } else {
+      // if its just one, then the final iterator can be set to that iterator
       final_iterator = iters[0];
     }
 
-    // build the Iterator
+    // if the query is asking to project columns, build the projection
     if (cols != null && cols.length > 0) {
-      final_iterator = new Projection(final_iterator, fieldnums.toArray(new Integer[fieldnums.size()]));
+      final_iterator = new Projection(final_iterator, fieldNums);
     }
 
+    // explaining for testing purposes
     final_iterator.explain(0);
 
   } // public Select(AST_Select tree) throws QueryException
@@ -148,7 +171,8 @@ class Select implements Plan {
       final_iterator.explain(0);
     }
     
-    // final_iterator.execute();
+    final_iterator.execute();
+    final_iterator.close();
     // System.out.println("(Not implemented)");
 
   } // public void execute()
