@@ -150,10 +150,12 @@ class Select extends TestablePlan {
         }
       });
 
+      predsList.remove(entryList.get(0).getKey());
       finalIterator = new SimpleJoin(iters[0], iters[1], entryList.get(0).getKey());
 
+      // this is really bad and shouldn't work
       for (int i = 2; i < iters.length; i++) {
-        finalIterator = new SimpleJoin(finalIterator, iters[i], entryList.get(0).getKey());
+        finalIterator = new SimpleJoin(finalIterator, iters[i], null);
       }
     } else {
       // if its just one, then the final iterator can be set to that iterator
