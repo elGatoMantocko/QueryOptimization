@@ -4,6 +4,7 @@
 -- Database Setup
 
 DROP INDEX IX_Age;
+DROP INDEX IX_Name;
 DROP TABLE Students;
 DROP TABLE Courses;
 DROP TABLE Grades;
@@ -95,6 +96,7 @@ UPDATE Students SET sid = 5 WHERE name = 'Chris';
 DELETE Students WHERE name = 'Chris';
 
 DROP INDEX IX_Age;
+DROP INDEX IX_Name;
 DROP TABLE Students;
 DROP TABLE Courses;
 DROP TABLE Grades;
