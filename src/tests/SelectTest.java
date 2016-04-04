@@ -61,7 +61,7 @@ public class SelectTest extends MinibaseTest {
   public void testSimpleSelectAll() {
     try {
       List<Tuple> output = Msql.testableexecute("SELECT * FROM Foo;\nQUIT;");
-      Assert.assertNotEquals(0, output.size());
+      Assert.assertTrue(0 < output.size());
     } catch(ParseException e){
       e.printStackTrace();
       Assert.fail();
