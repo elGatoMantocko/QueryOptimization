@@ -112,6 +112,7 @@ class Select extends TestablePlan {
               HashIndex index = new HashIndex(desc.indexName);
               KeyScan scan = new KeyScan(tableSchema, index, new SearchKey(pred.getRight()), new HeapFile(desc.indexName));
               
+              iteratorMap.get(entry.getKey()).close();
               iteratorMap.put(entry.getKey(), scan);
             }
           }
