@@ -132,9 +132,12 @@ class Select implements Plan {
     }
 
     // build the Iterator
-    if (cols != null) {
+    if (cols != null && cols.length > 0) {
       final_iterator = new Projection(final_iterator, fieldnums.toArray(new Integer[fieldnums.size()]));
     }
+
+    final_iterator.explain(0);
+
   } // public Select(AST_Select tree) throws QueryException
 
   /**
