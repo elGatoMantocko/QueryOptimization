@@ -8,6 +8,7 @@ import heap.HeapFile;
 import index.HashIndex;
 import relop.Tuple;
 import relop.Schema;
+import relop.FileScan;
 
 /**
  * Execution plan for inserting tuples.
@@ -40,6 +41,18 @@ class Insert implements Plan {
   public void execute() {
     Tuple tup = new Tuple(schema, fields);
     HeapFile file = new HeapFile(fileName);
+
+    // naive method to update statistics
+    FileScan scan = new FileScan(Minibase.SystemCatalog.s_rel, Minibase.SystemCatalog.f_rel);
+    while (scan.hasNext()) {
+      Tuple t = scan.getNext();
+      if (t.getField("relName").equals(fileName)) {
+        int count = (int)t.getField("recCount") + 1;
+        t.setField("recCount", count);
+        Minibase.SystemCatalog.f_rel.updateRecord(scan.getLastRID(), t.getData());
+        break;
+      }
+    }
 
     RID rid = file.insertRecord(tup.getData());
 
