@@ -30,22 +30,22 @@ public class Catalog implements GlobalConst {
   // --------------------------------------------------------------------------
 
   /** Schema of the relation catalog. */
-  public Schema s_rel;
+  protected Schema s_rel;
 
   /** Schema of the attribute catalog. */
-  public Schema s_att;
+  protected Schema s_att;
 
   /** Schema of the index catalog. */
-  public Schema s_ind;
+  protected Schema s_ind;
 
   /** Heap file for the relation catalog. */
-  public HeapFile f_rel;
+  protected HeapFile f_rel;
 
   /** Heap file for the attribute catalog. */
-  public HeapFile f_att;
+  protected HeapFile f_att;
 
   /** Heap file for the index catalog. */
-  public HeapFile f_ind;
+  protected HeapFile f_ind;
 
   // --------------------------------------------------------------------------
 

@@ -59,16 +59,7 @@ public class InsertTest extends MinibaseTest {
   public void testRecordStatsUpdated() throws ParseException, QueryException, TokenMgrError {
     Msql.execute("INSERT INTO Students VALUES (1, 'Alice', 25.67);\nINSERT INTO Students VALUES (2, 'Chris', 12.34);\nQUIT");
 
-    FileScan scan = new FileScan(Minibase.SystemCatalog.s_rel, Minibase.SystemCatalog.f_rel);
-    while (scan.hasNext()) {
-      Tuple t = scan.getNext();
-      if (t.getField("relName").equals("Students")) {
-        Assert.assertEquals("The record stats weren't updated properly", 2, (int)t.getField("recCount"));
-        break;
-      }
-    }
-
-    scan.close();
+    Assert.assertEquals("The record stats weren't updated properly", 2, Minibase.SystemCatalog.getRecCount("Students"));
   }
 
   @Test (expected=QueryException.class)

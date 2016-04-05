@@ -57,16 +57,7 @@ public class DeleteTest extends MinibaseTest {
   public void testRecordStatsUpdated() throws ParseException, QueryException, TokenMgrError {
     Msql.execute("DELETE Students WHERE name = 'Chris' or name = 'Alice';\nQUIT;");
 
-    FileScan scan = new FileScan(Minibase.SystemCatalog.s_rel, Minibase.SystemCatalog.f_rel);
-    while (scan.hasNext()) {
-      Tuple t = scan.getNext();
-      if (t.getField("relName").equals("Students")) {
-        Assert.assertEquals("The record stats weren't updated properly", 3, (int)t.getField("recCount"));
-        break;
-      }
-    }
-
-    scan.close();
+    Assert.assertEquals("The record stats weren't updated properly", 3, Minibase.SystemCatalog.getRecCount("Students"));
   }
 
   @Test
