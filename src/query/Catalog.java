@@ -320,10 +320,12 @@ public class Catalog implements GlobalConst {
     while (scan.hasNext()) {
       Tuple t = scan.getNext();
       if (t.getField("relName").equals(fileName)) {
+        scan.close();
         return (int)t.getField("recCount");
       }
     }
     
+    scan.close();
     return -1;
   }
 
