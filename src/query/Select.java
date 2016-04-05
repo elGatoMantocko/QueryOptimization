@@ -9,6 +9,7 @@ import relop.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
@@ -123,13 +124,25 @@ class Select extends TestablePlan {
       }
     } // push selections
 
-    // we need to estimate the cost of joining all relations with eachother
-    //  use a reduction factor for relations with indexed columns
-
+    String[] tables = iteratorMap.keySet().toArray(new String[iteratorMap.size()]);
     Iterator[] iters = iteratorMap.values().toArray(new Iterator[iteratorMap.size()]);
 
     // if there is more than one iterator, we need to make some join(s)
     if (iters.length > 1) {
+
+      // we need to estimate the cost of joining all relations with eachother
+      //  use a reduction factor for relations with indexed columns
+      HashMap<String[], Integer> joinCost = new HashMap<String[], Integer>();
+      for (int i = 0; i < tables.length; i++) {
+        for (int j = i + 1; j < tables.length; j++) {
+          // calculate the cost of joining tables[i] with tables[j]
+          //  store that cost in joinCost as <sort(iTable + jTable), score>
+          //   this probably wont be the final method to keep score,
+          //   but I just wanted to test the theory
+          joinCost.put(new String[] { tables[j], tables[i] }, 0);
+        }
+      }
+      System.out.println(joinCost);
 
       HashMap<Predicate[], Integer> score = new HashMap<Predicate[], Integer>();
       for (Predicate[] candidate : predsList) {
