@@ -329,10 +329,10 @@ public class Catalog implements GlobalConst {
 
   /**
    * Increments the count of the specified relation by some number
-   * @param fileName usage...
-   * @param amt usage...
+   * @param fileName name of relation to change
+   * @param amt number of records that were inserted
    *  
-   * @return object
+   * @return number of records in relation or -1 if no relation exists
    **/
   public int incrementCount(String fileName, int amt) {
     FileScan scan = new FileScan(s_rel, f_rel);
@@ -341,6 +341,30 @@ public class Catalog implements GlobalConst {
       Tuple t = scan.getNext();
       if (t.getField("relName").equals(fileName)) {
         t.setField("recCount", (int)t.getField("recCount") + amt);
+        f_rel.updateRecord(scan.getLastRID(), t.getData());
+        scan.close();
+        return (int)t.getField("recCount");
+      }
+    }
+
+    scan.close();
+    return -1;
+  }
+
+  /**
+   * Decrements the count of the specified relation by some number
+   * @param fileName name of relation to change
+   * @param amt number of records that were inserted
+   *  
+   * @return number of records in relation or -1 if no relation exists
+   **/
+  public int decrementCount(String fileName, int amt) {
+    FileScan scan = new FileScan(s_rel, f_rel);
+    // naive method to update statistics
+    while (scan.hasNext()) {
+      Tuple t = scan.getNext();
+      if (t.getField("relName").equals(fileName) && (int)t.getField("recCount") - amt >= 0) {
+        t.setField("recCount", (int)t.getField("recCount") - amt);
         f_rel.updateRecord(scan.getLastRID(), t.getData());
         scan.close();
         return (int)t.getField("recCount");
