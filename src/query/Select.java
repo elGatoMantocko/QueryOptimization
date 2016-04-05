@@ -121,7 +121,10 @@ class Select extends TestablePlan {
           iteratorMap.put(entry.getKey(), new Selection(iteratorMap.get(entry.getKey()), preds[i]));
         }
       }
-    }
+    } // push selections
+
+    // we need to estimate the cost of joining all relations with eachother
+    //  use a reduction factor for relations with indexed columns
 
     Iterator[] iters = iteratorMap.values().toArray(new Iterator[iteratorMap.size()]);
 
