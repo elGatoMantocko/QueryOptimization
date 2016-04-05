@@ -66,6 +66,23 @@ class Delete implements Plan {
       }
     }
 
+    // naive method to update statistics
+    FileScan statScan = new FileScan(Minibase.SystemCatalog.s_rel, Minibase.SystemCatalog.f_rel);
+    while (statScan.hasNext()) {
+      Tuple t = statScan.getNext();
+      if (t.getField("relName").equals(fileName)) {
+        int count = (int)t.getField("recCount") - rowCount;
+        t.setField("recCount", count);
+        Minibase.SystemCatalog.f_rel.updateRecord(statScan.getLastRID(), t.getData());
+        break;
+      }
+    }
+
+    // FileScan test = new FileScan(Minibase.SystemCatalog.s_rel, Minibase.SystemCatalog.f_rel);
+    // test.execute();
+
+    statScan.close();
+
     scan.close();
     System.out.println(rowCount + " rows deleted.");
   } // public void execute()
