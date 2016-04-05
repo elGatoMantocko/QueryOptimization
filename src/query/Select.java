@@ -175,9 +175,10 @@ class Select extends TestablePlan {
   public void execute() {
     if (explain) {
       finalIterator.explain(0);
+      finalIterator.close();
+    } else {
+      finalIterator.execute();
     }
-    
-    finalIterator.execute();
 
 
     // System.out.println("(Not implemented)");

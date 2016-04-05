@@ -44,9 +44,13 @@ INSERT INTO Foo VALUES (1, 4, 3, 4, 6);
 -------------------------------------------------------------------------------
 -- Sample Queries
 
+SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0;
 explain SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0;
+SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0 OR sid = gsid AND points <= 2.5;
 explain SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0 OR sid = gsid AND points <= 2.5;
+SELECT * FROM Foo WHERE a = 1 and b = 2 or c = 3 and d = 4 and e = 5;
 explain SELECT * FROM Foo WHERE a = 1 and b = 2 or c = 3 and d = 4 and e = 5;
+SELECT * FROM Students, Grades WHERE sid = gsid AND age = 30.0;
 explain SELECT * FROM Students, Grades WHERE sid = gsid AND age = 30.0;
 
 STATS
