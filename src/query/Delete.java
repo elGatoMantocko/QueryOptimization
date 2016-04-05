@@ -78,11 +78,7 @@ class Delete implements Plan {
       }
     }
 
-    // FileScan test = new FileScan(Minibase.SystemCatalog.s_rel, Minibase.SystemCatalog.f_rel);
-    // test.execute();
-
     statScan.close();
-
     scan.close();
     System.out.println(rowCount + " rows deleted.");
   } // public void execute()

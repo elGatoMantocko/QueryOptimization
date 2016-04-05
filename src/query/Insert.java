@@ -54,9 +54,6 @@ class Insert implements Plan {
       }
     }
 
-    // FileScan test = new FileScan(Minibase.SystemCatalog.s_rel, Minibase.SystemCatalog.f_rel);
-    // test.execute();
-
     scan.close();
 
     RID rid = file.insertRecord(tup.getData());
