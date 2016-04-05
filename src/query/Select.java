@@ -142,7 +142,6 @@ class Select extends TestablePlan {
           joinCost.put(new String[] { tables[j], tables[i] }, 0);
         }
       }
-      System.out.println(joinCost);
 
       HashMap<Predicate[], Integer> score = new HashMap<Predicate[], Integer>();
       for (Predicate[] candidate : predsList) {
