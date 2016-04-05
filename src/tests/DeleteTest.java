@@ -38,17 +38,9 @@ public class DeleteTest extends MinibaseTest {
   }
 
   @Test
-  public void testDeleteOneRow() {
+  public void testDeleteOneRow() throws Exception {
     // delete row
-    try {
-      Msql.execute("DELETE Students WHERE name = 'Chris';\nQUIT;");
-    } catch(ParseException e){
-      e.printStackTrace();
-    } catch(TokenMgrError e) {
-      e.printStackTrace();
-    } catch(QueryException e) {
-      e.printStackTrace();
-    }
+    Msql.execute("DELETE Students WHERE name = 'Chris';\nQUIT;");
 
     HeapFile file = new HeapFile("Students");
     FileScan scan = new FileScan(Minibase.SystemCatalog.getSchema("Students"), file);
@@ -62,16 +54,24 @@ public class DeleteTest extends MinibaseTest {
   }
 
   @Test
-  public void testDeleteMultiRow() {
-    try {
-      Msql.execute("DELETE Students WHERE name = 'Chris' or name = 'Alice';\nQUIT;");
-    } catch(ParseException e){
-      e.printStackTrace();
-    } catch(TokenMgrError e) {
-      e.printStackTrace();
-    } catch(QueryException e) {
-      e.printStackTrace();
+  public void testRecordStatsUpdated() throws ParseException, QueryException, TokenMgrError {
+    Msql.execute("DELETE Students WHERE name = 'Chris' or name = 'Alice';\nQUIT;");
+
+    FileScan scan = new FileScan(Minibase.SystemCatalog.s_rel, Minibase.SystemCatalog.f_rel);
+    while (scan.hasNext()) {
+      Tuple t = scan.getNext();
+      if (t.getField("relName").equals("Students")) {
+        Assert.assertEquals("The record stats weren't updated properly", 3, (int)t.getField("recCount"));
+        break;
+      }
     }
+
+    scan.close();
+  }
+
+  @Test
+  public void testDeleteMultiRow() throws ParseException, QueryException, TokenMgrError {
+    Msql.execute("DELETE Students WHERE name = 'Chris' or name = 'Alice';\nQUIT;");
 
     HeapFile file = new HeapFile("Students");
     FileScan scan = new FileScan(Minibase.SystemCatalog.getSchema("Students"), file);
@@ -86,16 +86,8 @@ public class DeleteTest extends MinibaseTest {
   }
 
   @Test
-  public void testNoRowsToDelete() {
-    try {
-      Msql.execute("DELETE Students WHERE name = 'Elliott';\nQUIT;");
-    } catch(ParseException e){
-      e.printStackTrace();
-    } catch(TokenMgrError e) {
-      e.printStackTrace();
-    } catch(QueryException e) {
-      e.printStackTrace();
-    }
+  public void testNoRowsToDelete() throws ParseException, QueryException, TokenMgrError {
+    Msql.execute("DELETE Students WHERE name = 'Elliott';\nQUIT;");
 
     HeapFile file = new HeapFile("Students");
     FileScan scan = new FileScan(Minibase.SystemCatalog.getSchema("Students"), file);
@@ -112,24 +104,12 @@ public class DeleteTest extends MinibaseTest {
   }
 
   @Test (expected=QueryException.class)
-  public void testDeleteTableDoesntExist() throws QueryException {
-    try {
-      Msql.execute("DELETE Bad;\nQUIT;");
-    } catch(ParseException e){
-      e.printStackTrace();
-    } catch(TokenMgrError e) {
-      e.printStackTrace();
-    }
+  public void testDeleteTableDoesntExist() throws QueryException, TokenMgrError, ParseException {
+    Msql.execute("DELETE Bad;\nQUIT;");
   }
 
   @Test (expected=QueryException.class)
-  public void testDeletePredicatesInvalid() throws QueryException {
-    try {
-      Msql.execute("DELETE Students WHERE bad = 'Elliott';\nQUIT;");
-    } catch(ParseException e){
-      e.printStackTrace();
-    } catch(TokenMgrError e) {
-      e.printStackTrace();
-    }
+  public void testDeletePredicatesInvalid() throws QueryException, ParseException, TokenMgrError {
+    Msql.execute("DELETE Students WHERE bad = 'Elliott';\nQUIT;");
   }
 }
