@@ -15,9 +15,9 @@ CREATE TABLE Courses (cid INTEGER, title STRING(50));
 CREATE TABLE Grades (gsid INTEGER, gcid INTEGER, points FLOAT);
 CREATE TABLE Foo (a INTEGER, b INTEGER, c INTEGER, d INTEGER, e INTEGER);
 
-CREATE INDEX IX_Age ON Students(Age);
-CREATE INDEX IX_Points ON Grades(Points);
-CREATE INDEX IX_Name ON Students(Name);
+CREATE INDEX IX_Age ON Students(age);
+CREATE INDEX IX_Points ON Grades(points);
+CREATE INDEX IX_Name ON Students(name);
 
 INSERT INTO Students VALUES (1, 'Alice', 25.67);
 INSERT INTO Students VALUES (2, 'Chris', 12.34);
