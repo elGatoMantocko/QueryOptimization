@@ -16,14 +16,14 @@ CREATE TABLE Grades (gsid INTEGER, gcid INTEGER, points FLOAT);
 CREATE TABLE Foo (a INTEGER, b INTEGER, c INTEGER, d INTEGER, e INTEGER);
 
 CREATE INDEX IX_Age ON Students(Age);
+CREATE INDEX IX_Points ON Grades(Points);
+CREATE INDEX IX_Name ON Students(Name);
 
 INSERT INTO Students VALUES (1, 'Alice', 25.67);
 INSERT INTO Students VALUES (2, 'Chris', 12.34);
 INSERT INTO Students VALUES (3, 'Bob', 30.0);
 INSERT INTO Students VALUES (4, 'Andy', 50.0);
 INSERT INTO Students VALUES (5, 'Ron', 30.0);
-
-CREATE INDEX IX_Name ON Students(Name);
 
 INSERT INTO Courses VALUES (448, 'DB Fun');
 INSERT INTO Courses VALUES (348, 'Less Cool');
