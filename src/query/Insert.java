@@ -41,22 +41,8 @@ class Insert implements Plan {
   public void execute() {
     Tuple tup = new Tuple(schema, fields);
     HeapFile file = new HeapFile(fileName);
-
-    // naive method to update statistics
-    FileScan scan = new FileScan(Minibase.SystemCatalog.s_rel, Minibase.SystemCatalog.f_rel);
-    while (scan.hasNext()) {
-      Tuple t = scan.getNext();
-      if (t.getField("relName").equals(fileName)) {
-        int count = (int)t.getField("recCount") + 1;
-        t.setField("recCount", count);
-        Minibase.SystemCatalog.f_rel.updateRecord(scan.getLastRID(), t.getData());
-        break;
-      }
-    }
-
-    scan.close();
-
     RID rid = file.insertRecord(tup.getData());
+    Minibase.SystemCatalog.incrementCount(fileName, 1);
 
     for (IndexDesc desc : Minibase.SystemCatalog.getIndexes(fileName)) {
       HashIndex index = new HashIndex(desc.indexName);
