@@ -66,6 +66,8 @@ class Delete implements Plan {
       }
     }
 
+    Minibase.SystemCatalog.decrementCount(fileName, rowCount);
+    
     scan.close();
     System.out.println(rowCount + " rows deleted.");
   } // public void execute()
