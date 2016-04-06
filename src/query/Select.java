@@ -127,10 +127,12 @@ class Select extends TestablePlan {
     // build the finalIterator by determining join order of the iteratorMap
     System.out.println(iteratorMap);
     String[] fileNames = iteratorMap.keySet().toArray(new String[iteratorMap.size()]);
+    // for each table we have to see what the join cost is for every other table
     for (int i = 0; i < fileNames.length; i++) {
       for (int j = i + 1; j < fileNames.length; j++) {
-        System.out.println("compute cost of join " + fileNames[i] + " " + fileNames[j]);
-
+        int count1 = Minibase.SystemCatalog.getRecCount(fileNames[i]);
+        int count2 = Minibase.SystemCatalog.getRecCount(fileNames[j]);
+        System.out.println("compute cost of join " + fileNames[i] + ": " + count1 + " " + fileNames[j] + ": " + count2);
       }
     }
 
