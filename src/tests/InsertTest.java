@@ -31,17 +31,9 @@ public class InsertTest extends MinibaseTest {
   }
   
   @Test
-  public void testInsertGoodRow() {
+  public void testInsertGoodRow() throws TokenMgrError, ParseException, QueryException {
     boolean passes = false;
-    try {
-      Msql.execute("INSERT INTO Students VALUES (1, 'Alice', 25.67);\nQUIT;");
-    } catch(ParseException e){
-      e.printStackTrace();
-    } catch(TokenMgrError e) {
-      e.printStackTrace();
-    } catch(QueryException e) {
-      e.printStackTrace();
-    }
+    Msql.execute("INSERT INTO Students VALUES (1, 'Alice', 25.67);\nQUIT;");
 
     Schema schema = Minibase.SystemCatalog.getSchema("Students");
 
@@ -63,15 +55,16 @@ public class InsertTest extends MinibaseTest {
     Assert.assertTrue("No row with specified data was found.", passes);
   }
 
+  @Test
+  public void testRecordStatsUpdated() throws ParseException, QueryException, TokenMgrError {
+    Msql.execute("INSERT INTO Students VALUES (1, 'Alice', 25.67);\nINSERT INTO Students VALUES (2, 'Chris', 12.34);\nQUIT");
+
+    Assert.assertEquals("The record stats weren't updated properly", 2, Minibase.SystemCatalog.getRecCount("Students"));
+  }
+
   @Test (expected=QueryException.class)
-  public void testInsertBadRow() throws QueryException {
-    try {
-      Msql.execute("INSERT INTO Students VALUES (1, 'Alice', 25.67, 'test');\nQUIT;");
-    } catch(ParseException e){
-      e.printStackTrace();
-    } catch(TokenMgrError e) {
-      e.printStackTrace();
-    } 
+  public void testInsertBadRow() throws QueryException, ParseException, TokenMgrError {
+    Msql.execute("INSERT INTO Students VALUES (1, 'Alice', 25.67, 'test');\nQUIT;");
   }
 
 }
