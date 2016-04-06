@@ -124,60 +124,8 @@ class Select extends TestablePlan {
       }
     } // push selections
 
-    String[] tables = iteratorMap.keySet().toArray(new String[iteratorMap.size()]);
-    Iterator[] iters = iteratorMap.values().toArray(new Iterator[iteratorMap.size()]);
-
-    // if there is more than one iterator, we need to make some join(s)
-    if (iters.length > 1) {
-
-      // we need to estimate the cost of joining all relations with eachother
-      //  use a reduction factor for relations with indexed columns
-      HashMap<String[], Integer> joinCost = new HashMap<String[], Integer>();
-      for (int i = 0; i < tables.length; i++) {
-        for (int j = i + 1; j < tables.length; j++) {
-          // calculate the cost of joining tables[i] with tables[j]
-          //  store that cost in joinCost as <sort(iTable + jTable), score>
-          //   this probably wont be the final method to keep score,
-          //   but I just wanted to test the theory
-          joinCost.put(new String[] { tables[j], tables[i] }, 0);
-        }
-      }
-
-      HashMap<Predicate[], Integer> score = new HashMap<Predicate[], Integer>();
-      for (Predicate[] candidate : predsList) {
-        score.put(candidate, new Integer(0));
-        for (Predicate pred : candidate) {
-          if (pred.getLtype() == AttrType.COLNAME && pred.getRtype() == AttrType.COLNAME && pred.getOper() == AttrOperator.EQ) {
-            score.put(candidate, new Integer(score.get(candidate) + 1));
-          }
-        }
-      }
-
-      List<Map.Entry<Predicate[], Integer>> entryList = new ArrayList<>();
-      entryList.addAll(score.entrySet());
-      Collections.sort(entryList, new Comparator<Map.Entry<Predicate[], Integer>>() {
-        @Override
-        public int compare(Map.Entry<Predicate[], Integer> left, Map.Entry<Predicate[], Integer> right) {
-          return right.getValue() - left.getValue();
-        }
-      });
-
-      predsList.remove(entryList.get(0).getKey());
-      finalIterator = new SimpleJoin(iters[0], iters[1], entryList.get(0).getKey());
-
-      // this is really bad and shouldn't work
-      for (int i = 2; i < iters.length; i++) {
-        finalIterator = new SimpleJoin(finalIterator, iters[i], null);
-      }
-    } else {
-      // if its just one, then the final iterator can be set to that iterator
-      finalIterator = iters[0];
-    }
-
-    // if the query is asking to project columns, build the projection
-    if (cols != null && cols.length > 0) {
-      finalIterator = new Projection(finalIterator, fieldNums);
-    }
+    // build the finalIterator by determining join order of the iteratorMap
+    System.out.println(iteratorMap);
 
     // explaining for testing purposes
     // finalIterator.explain(0);
@@ -189,10 +137,10 @@ class Select extends TestablePlan {
    */
   public void execute() {
     if (explain) {
-      finalIterator.explain(0);
-      finalIterator.close();
+      // finalIterator.explain(0);
+      // finalIterator.close();
     } else {
-      finalIterator.execute();
+      // finalIterator.execute();
     }
 
 
