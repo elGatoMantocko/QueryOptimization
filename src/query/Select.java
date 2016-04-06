@@ -129,10 +129,34 @@ class Select extends TestablePlan {
     String[] fileNames = iteratorMap.keySet().toArray(new String[iteratorMap.size()]);
     // for each table we have to see what the join cost is for every other table
     for (int i = 0; i < fileNames.length; i++) {
+      int leftCount = Minibase.SystemCatalog.getRecCount(fileNames[i]);
+      Schema leftSchema = Minibase.SystemCatalog.getSchema(fileNames[i]);
       for (int j = i + 1; j < fileNames.length; j++) {
-        int count1 = Minibase.SystemCatalog.getRecCount(fileNames[i]);
-        int count2 = Minibase.SystemCatalog.getRecCount(fileNames[j]);
-        System.out.println("compute cost of join " + fileNames[i] + ": " + count1 + " " + fileNames[j] + ": " + count2);
+        int rightCount = Minibase.SystemCatalog.getRecCount(fileNames[j]);
+        Schema rightSchema = Minibase.SystemCatalog.getSchema(fileNames[j]);
+        System.out.println("compute cost of join " + fileNames[i] + ": " + leftCount + " " + fileNames[j] + ": " + rightCount);
+
+        Schema joinedSchema = Schema.join(leftSchema, rightSchema);
+        
+        // for each of the or candidates for a join predicate
+        //  we need to determine which predicate works best with this particular join
+        for (Predicate[] candidate : predsList) {
+          boolean valid = true;
+          List<IndexDesc> descriptions = new ArrayList<IndexDesc>();
+          for (Predicate pred : candidate) {
+            // check that all of the or predicats are valid on the current join
+            if (valid = valid && pred.validate(joinedSchema)) {
+              System.out.print(pred.toString() + " ");
+            }
+          }
+
+          // all of the or preds passed and we can use it to create a score
+          if (valid) {
+            // apply the reduction factor depending if there is an index or not
+            System.out.print(true);
+            System.out.println();
+          }
+        }
       }
     }
 
