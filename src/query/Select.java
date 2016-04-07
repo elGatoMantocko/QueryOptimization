@@ -130,12 +130,14 @@ class Select extends TestablePlan {
     // for each table we have to see what the join cost is for every other table
     for (int i = 0; i < fileNames.length; i++) {
       // this returns an iterator of all of the indexes on the left table
+      //  with info about where it is in the table
       Selection leftIndexes = new Selection(getIndexData(), new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 0, AttrType.STRING, fileNames[i]));
 
       int leftCount = Minibase.SystemCatalog.getRecCount(fileNames[i]);
       Schema leftSchema = Minibase.SystemCatalog.getSchema(fileNames[i]);
       for (int j = i + 1; j < fileNames.length; j++) {
         // this returns an iterator of all of the indexes on the right table
+        //  with info about where it is in the table
         Selection rightIndexes = new Selection(getIndexData(), new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 1, AttrType.STRING, fileNames[j]));
 
         int rightCount = Minibase.SystemCatalog.getRecCount(fileNames[j]);
