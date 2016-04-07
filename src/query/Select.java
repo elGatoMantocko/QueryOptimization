@@ -129,9 +129,15 @@ class Select extends TestablePlan {
     String[] fileNames = iteratorMap.keySet().toArray(new String[iteratorMap.size()]);
     // for each table we have to see what the join cost is for every other table
     for (int i = 0; i < fileNames.length; i++) {
+      // this returns an iterator of all of the indexes on the left table
+      Selection leftIndexes = new Selection(getAllCatsJoined(), new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 1, AttrType.STRING, fileNames[i]));
+
       int leftCount = Minibase.SystemCatalog.getRecCount(fileNames[i]);
       Schema leftSchema = Minibase.SystemCatalog.getSchema(fileNames[i]);
       for (int j = i + 1; j < fileNames.length; j++) {
+        // this returns an iterator of all of the indexes on the right table
+        Selection rightIndexes = new Selection(getAllCatsJoined(), new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 1, AttrType.STRING, fileNames[j]));
+
         int rightCount = Minibase.SystemCatalog.getRecCount(fileNames[j]);
         Schema rightSchema = Minibase.SystemCatalog.getSchema(fileNames[j]);
         System.out.println("compute cost of join " + fileNames[i] + ": " + leftCount + " " + fileNames[j] + ": " + rightCount);
@@ -142,19 +148,17 @@ class Select extends TestablePlan {
         //  we need to determine which predicate works best with this particular join
         for (Predicate[] candidate : predsList) {
           boolean valid = true;
-          List<IndexDesc> descriptions = new ArrayList<IndexDesc>();
           for (Predicate pred : candidate) {
             // check that all of the or predicats are valid on the current join
             if (valid = valid && pred.validate(joinedSchema)) {
-              System.out.print(pred.toString() + " ");
+              // first see if there is an index on any col in the pred
+              // pick the cost of the best index
             }
           }
 
           // all of the or preds passed and we can use it to create a score
           if (valid) {
             // apply the reduction factor depending if there is an index or not
-            System.out.print(true);
-            System.out.println();
           }
         }
       }
@@ -164,6 +168,53 @@ class Select extends TestablePlan {
     // finalIterator.explain(0);
     setFinalIterator(finalIterator);
   } // public Select(AST_Select tree) throws QueryException
+
+  private int indexCostReduction(Iterator tabIndexes, String fileName, Schema schema, Predicate pred) {
+    int reduction = 10;
+    if (pred.getLtype() == AttrType.COLNAME) {
+      // need to reset the left indexes
+      tabIndexes.restart();
+
+      // find all indexes on the left colname
+      Selection lhsIndexes = new Selection(tabIndexes, new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 6, AttrType.STRING, (String)pred.getLeft()));
+      if (lhsIndexes.hasNext()) {
+        // there was at least one index found for that column
+        //  this means that we can apply a much better reduction factor
+        // we need to figure out the number of keys in that index here
+      }
+      lhsIndexes.close();
+    }
+
+    if (pred.getRtype() == AttrType.COLNAME) {
+      // need to reset the left indexes
+      tabIndexes.restart();
+
+      // find all indexes on the right colname
+      Selection rhsIndexes = new Selection(tabIndexes, new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 6, AttrType.STRING, (String)pred.getLeft()));
+      if (rhsIndexes.hasNext()) {
+        // there was at least one index found for that column
+        //  this means that we can apply a much better reduction factor
+        // we need to figure out the number of keys in that index here
+      }
+      rhsIndexes.close();
+    }
+
+    return reduction;
+  }
+
+  private Iterator getAllCatsJoined() {
+    FileScan relScan = new FileScan(Minibase.SystemCatalog.s_rel, Minibase.SystemCatalog.f_rel);
+    FileScan attScan = new FileScan(Minibase.SystemCatalog.s_att, Minibase.SystemCatalog.f_att);
+    FileScan indScan = new FileScan(Minibase.SystemCatalog.s_ind, Minibase.SystemCatalog.f_ind);
+
+    SimpleJoin relAttJoin = new SimpleJoin(relScan, attScan, new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 0, AttrType.FIELDNO, 2));
+    // this joined catalog can help find all of the available indexes on a particular table
+    SimpleJoin joinAll = new SimpleJoin(indScan, relAttJoin, new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 2, AttrType.FIELDNO, 9));
+
+    Projection reduceCols = new Projection(joinAll, 0, 1, 4, 6, 7, 8, 9);
+
+    return reduceCols;
+  }
 
   /**
    * Executes the plan and prints applicable output.
