@@ -183,7 +183,6 @@ class Select extends TestablePlan {
         //  this means that we can apply a much better reduction factor
         // TODO: we need to figure out the number of keys in that index here
       }
-      lhsIndexes.close();
     }
 
     if (pred.getRtype() == AttrType.COLNAME) {
@@ -197,7 +196,6 @@ class Select extends TestablePlan {
         //  this means that we can apply a much better reduction factor
         // TODO: we need to figure out the number of keys in that index here
       }
-      rhsIndexes.close();
     }
 
     return reduction;
