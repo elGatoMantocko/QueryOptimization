@@ -180,8 +180,11 @@ class Select extends TestablePlan {
           }
 
           // all of the or preds passed and we can use it to create a score
+          Predicate[] truePred = new Predicate[] { new Predicate(AttrOperator.EQ, AttrType.INTEGER, 1, AttrType.INTEGER, 1) };
           if (valid) {
             candList.put(candidate, new Float((float)(leftCount * rightCount) / (float)reduction));
+          } else {
+            candList.put(truePred, new Float(leftCount * rightCount));
           }
         }
 
