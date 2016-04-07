@@ -128,6 +128,7 @@ class Select extends TestablePlan {
     System.out.println(iteratorMap);
     String[] fileNames = iteratorMap.keySet().toArray(new String[iteratorMap.size()]);
     // for each table we have to see what the join cost is for every other table
+
     for (int i = 0; i < fileNames.length; i++) {
       // this returns an iterator of all of the indexes on the left table
       //  with info about where it is in the table
@@ -148,13 +149,35 @@ class Select extends TestablePlan {
         
         // for each of the or candidates for a join predicate
         //  we need to determine which predicate works best with this particular join
+        HashMap<Predicate[], Float> candList = new HashMap<Predicate[], Float>();
         for (Predicate[] candidate : predsList) {
           boolean valid = true;
+          int reduction = 1; // for now just assume cross
           for (Predicate pred : candidate) {
             // check that all of the or predicats are valid on the current join
             if (valid = valid && pred.validate(joinedSchema)) {
               // first see if there is an index on any col in the pred
-              // TODO: pick the cost of the best index
+              if ((pred.getLtype() == AttrType.COLNAME || pred.getLtype() == AttrType.FIELDNO) && 
+                  (pred.getRtype() == AttrType.COLNAME || pred.getRtype() == AttrType.FIELDNO) && 
+                  pred.getOper() == AttrOperator.EQ) {
+                // find the largest reduction factor between 10, number of keys on left, and number of keys on right
+                Integer[] reds = new Integer[] { new Integer(10), new Integer(getNumIndexKeys(fileNames[i])), new Integer(getNumIndexKeys(fileNames[j])) };
+                reduction = Collections.max(Arrays.asList(reds));
+              } else if ((pred.getLtype() == AttrType.COLNAME || pred.getLtype() == AttrType.FIELDNO) && 
+                  !(pred.getRtype() == AttrType.COLNAME || pred.getRtype() == AttrType.FIELDNO) && 
+                  pred.getOper() == AttrOperator.EQ) {
+                // find the largest reduction factor between 10, number of keys on left, and number of keys on right
+                Integer[] reds = new Integer[] { new Integer(10), new Integer(getNumIndexKeys(fileNames[i])), new Integer(getNumIndexKeys(fileNames[j])) };
+                reduction = Collections.max(Arrays.asList(reds));
+              } else if ((pred.getLtype() == AttrType.COLNAME || pred.getLtype() == AttrType.FIELDNO) && 
+                  !(pred.getRtype() == AttrType.COLNAME || pred.getRtype() == AttrType.FIELDNO) && 
+                  pred.getOper() != AttrOperator.EQ) {
+                // find the largest reduction factor between 10, number of keys on left, and number of keys on right
+                Integer[] reds = new Integer[] { new Integer(2), new Integer(getNumIndexKeys(fileNames[i])), new Integer(getNumIndexKeys(fileNames[j])) };
+                reduction = Collections.max(Arrays.asList(reds));
+              }
+
+              // TODO: pick the cost of the index with the most number of keys
               //  have to look at left and right tables seperately
             }
           }
@@ -162,8 +185,33 @@ class Select extends TestablePlan {
           // all of the or preds passed and we can use it to create a score
           if (valid) {
             // TODO: apply the reduction factor depending if there is an index or not
+            // TODO: add the pred[] to the list of candidates
+            candList.put(candidate, new Float((float)(leftCount * rightCount) / (float)reduction));
           }
         }
+
+        // find the best predicate to join on from the list
+        List<Map.Entry<Predicate[], Float>> entryList = new ArrayList<>();
+        entryList.addAll(candList.entrySet());
+        Collections.sort(entryList, new Comparator<Map.Entry<Predicate[], Float>>() {
+          @Override
+          public int compare(Map.Entry<Predicate[], Float> left, Map.Entry<Predicate[], Float> right) {
+            if (left.getValue() > right.getValue()) {
+              return 1;
+            } else if (left.getValue() < right.getValue()) {
+              return -1;
+            } else {
+              return 0;
+            }
+          }
+        });
+
+        // entry list [0] should contain the most optimal predicate for the join
+        //  what scenario would entryList be empty?
+        for (Predicate p : entryList.get(0).getKey()) {
+          System.out.print(p + " ");
+        }
+        System.out.println(entryList.get(0).getValue());
       }
     }
 
@@ -171,6 +219,10 @@ class Select extends TestablePlan {
     // finalIterator.explain(0);
     setFinalIterator(finalIterator);
   } // public Select(AST_Select tree) throws QueryException
+
+  private int getNumIndexKeys(String fileName) {
+    return 1;
+  }
 
   private int indexCostReduction(Iterator tabIndexes, String fileName, Schema schema, Predicate pred) {
     int reduction = 10;
