@@ -152,13 +152,14 @@ class Select extends TestablePlan {
             // check that all of the or predicats are valid on the current join
             if (valid = valid && pred.validate(joinedSchema)) {
               // first see if there is an index on any col in the pred
-              // pick the cost of the best index
+              // TODO: pick the cost of the best index
+              //  have to look at left and right tables seperately
             }
           }
 
           // all of the or preds passed and we can use it to create a score
           if (valid) {
-            // apply the reduction factor depending if there is an index or not
+            // TODO: apply the reduction factor depending if there is an index or not
           }
         }
       }
@@ -180,7 +181,7 @@ class Select extends TestablePlan {
       if (lhsIndexes.hasNext()) {
         // there was at least one index found for that column
         //  this means that we can apply a much better reduction factor
-        // we need to figure out the number of keys in that index here
+        // TODO: we need to figure out the number of keys in that index here
       }
       lhsIndexes.close();
     }
@@ -194,7 +195,7 @@ class Select extends TestablePlan {
       if (rhsIndexes.hasNext()) {
         // there was at least one index found for that column
         //  this means that we can apply a much better reduction factor
-        // we need to figure out the number of keys in that index here
+        // TODO: we need to figure out the number of keys in that index here
       }
       rhsIndexes.close();
     }
