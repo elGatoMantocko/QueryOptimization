@@ -166,7 +166,7 @@ class Select extends TestablePlan {
               } else if ((pred.getLtype() == AttrType.COLNAME || pred.getLtype() == AttrType.FIELDNO) && 
                   !(pred.getRtype() == AttrType.COLNAME || pred.getRtype() == AttrType.FIELDNO) && 
                   pred.getOper() == AttrOperator.EQ) {
-                // find the largest reduction factor between 10, number of keys on left, and number of keys on right
+                // find the largest reduction factor between 2, number of keys on left, and number of keys on right
                 Integer[] reds = new Integer[] { new Integer(10), new Integer(getNumIndexKeys(fileNames[i])), new Integer(getNumIndexKeys(fileNames[j])) };
                 reduction = Collections.max(Arrays.asList(reds));
               } else if ((pred.getLtype() == AttrType.COLNAME || pred.getLtype() == AttrType.FIELDNO) && 
@@ -176,16 +176,11 @@ class Select extends TestablePlan {
                 Integer[] reds = new Integer[] { new Integer(2), new Integer(getNumIndexKeys(fileNames[i])), new Integer(getNumIndexKeys(fileNames[j])) };
                 reduction = Collections.max(Arrays.asList(reds));
               }
-
-              // TODO: pick the cost of the index with the most number of keys
-              //  have to look at left and right tables seperately
             }
           }
 
           // all of the or preds passed and we can use it to create a score
           if (valid) {
-            // TODO: apply the reduction factor depending if there is an index or not
-            // TODO: add the pred[] to the list of candidates
             candList.put(candidate, new Float((float)(leftCount * rightCount) / (float)reduction));
           }
         }
