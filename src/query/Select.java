@@ -130,13 +130,13 @@ class Select extends TestablePlan {
     // for each table we have to see what the join cost is for every other table
     for (int i = 0; i < fileNames.length; i++) {
       // this returns an iterator of all of the indexes on the left table
-      Selection leftIndexes = new Selection(getAllCatsJoined(), new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 1, AttrType.STRING, fileNames[i]));
+      Selection leftIndexes = new Selection(getIndexData(), new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 0, AttrType.STRING, fileNames[i]));
 
       int leftCount = Minibase.SystemCatalog.getRecCount(fileNames[i]);
       Schema leftSchema = Minibase.SystemCatalog.getSchema(fileNames[i]);
       for (int j = i + 1; j < fileNames.length; j++) {
         // this returns an iterator of all of the indexes on the right table
-        Selection rightIndexes = new Selection(getAllCatsJoined(), new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 1, AttrType.STRING, fileNames[j]));
+        Selection rightIndexes = new Selection(getIndexData(), new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 1, AttrType.STRING, fileNames[j]));
 
         int rightCount = Minibase.SystemCatalog.getRecCount(fileNames[j]);
         Schema rightSchema = Minibase.SystemCatalog.getSchema(fileNames[j]);
@@ -201,16 +201,13 @@ class Select extends TestablePlan {
     return reduction;
   }
 
-  private Iterator getAllCatsJoined() {
-    FileScan relScan = new FileScan(Minibase.SystemCatalog.s_rel, Minibase.SystemCatalog.f_rel);
+  private Iterator getIndexData() {
     FileScan attScan = new FileScan(Minibase.SystemCatalog.s_att, Minibase.SystemCatalog.f_att);
     FileScan indScan = new FileScan(Minibase.SystemCatalog.s_ind, Minibase.SystemCatalog.f_ind);
 
-    SimpleJoin relAttJoin = new SimpleJoin(relScan, attScan, new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 0, AttrType.FIELDNO, 2));
-    // this joined catalog can help find all of the available indexes on a particular table
-    SimpleJoin joinAll = new SimpleJoin(indScan, relAttJoin, new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 2, AttrType.FIELDNO, 9));
+    SimpleJoin indexData = new SimpleJoin(attScan, indScan, new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 4, AttrType.FIELDNO, 7));
 
-    Projection reduceCols = new Projection(joinAll, 0, 1, 4, 6, 7, 8, 9);
+    Projection reduceCols = new Projection(indexData, 0, 1, 2, 3, 4, 5);
 
     return reduceCols;
   }
