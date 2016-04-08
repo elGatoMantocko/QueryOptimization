@@ -226,7 +226,7 @@ class Select extends TestablePlan {
       }
     });
 
-    if (entryList.size() > 1) {
+    if (entryList.size() > 0) {
       System.out.println("join " + entryList.get(0).getKey()[0] + " " + entryList.get(0).getKey()[1]);
       SimpleJoin join = new SimpleJoin(iteratorMap.get(entryList.get(0).getKey()[0]), iteratorMap.get(entryList.get(0).getKey()[1]), entryList.get(0).getValue().getKey());
       iteratorMap.put(entryList.get(0).getKey()[0] + entryList.get(0).getKey()[1], join);
