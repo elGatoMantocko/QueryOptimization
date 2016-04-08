@@ -129,6 +129,8 @@ class Select extends TestablePlan {
     String[] fileNames = iteratorMap.keySet().toArray(new String[iteratorMap.size()]);
     // for each table we have to see what the join cost is for every other table
 
+    HashMap<String[], Map.Entry<Predicate[], Float>> joinCands = new HashMap<>();
+
     for (int i = 0; i < fileNames.length; i++) {
       // this returns an iterator of all of the indexes on the left table
       //  with info about where it is in the table
@@ -204,13 +206,36 @@ class Select extends TestablePlan {
           }
         });
 
-        // entry list [0] should contain the most optimal predicate for the join
-        //  what scenario would entryList be empty?
-        for (Predicate p : entryList.get(0).getKey()) {
-          System.out.print(p + " ");
-        }
-        System.out.println(entryList.get(0).getValue());
+        joinCands.put(new String[] { fileNames[i], fileNames[j] }, entryList.get(0));
       }
+    }
+
+    // sort the join candidates
+    List<Map.Entry<String[], Map.Entry<Predicate[], Float>>> entryList = new ArrayList<>();
+    entryList.addAll(joinCands.entrySet());
+    Collections.sort(entryList, new Comparator<Map.Entry<String[], Map.Entry<Predicate[], Float>>>() {
+      @Override
+      public int compare(Map.Entry<String[], Map.Entry<Predicate[], Float>> left, Map.Entry<String[], Map.Entry<Predicate[], Float>> right) {
+        if (left.getValue().getValue() > right.getValue().getValue()) {
+          return 1;
+        } else if (left.getValue().getValue() < right.getValue().getValue()) {
+          return -1;
+        } else {
+          return 0;
+        }
+      }
+    });
+
+    if (entryList.size() > 1) {
+      System.out.println("join " + entryList.get(0).getKey()[0] + " " + entryList.get(0).getKey()[1]);
+      SimpleJoin join = new SimpleJoin(iteratorMap.get(entryList.get(0).getKey()[0]), iteratorMap.get(entryList.get(0).getKey()[1]), entryList.get(0).getValue().getKey());
+      iteratorMap.put(entryList.get(0).getKey()[0] + entryList.get(0).getKey()[1], join);
+
+      // need to update the iterator list
+      iteratorMap.remove(entryList.get(0).getKey()[0]);
+      iteratorMap.remove(entryList.get(0).getKey()[1]);
+    } else {
+      // set final iterator
     }
 
     // explaining for testing purposes
