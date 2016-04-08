@@ -226,7 +226,9 @@ class Select extends TestablePlan {
       }
     });
 
-    if (entryList.size() > 0) {
+    System.out.println(entryList.size());
+
+    if (entryList.size() == 1) {
       System.out.println("join " + entryList.get(0).getKey()[0] + " " + entryList.get(0).getKey()[1]);
       SimpleJoin join = new SimpleJoin(iteratorMap.get(entryList.get(0).getKey()[0]), iteratorMap.get(entryList.get(0).getKey()[1]), entryList.get(0).getValue().getKey());
       iteratorMap.put(entryList.get(0).getKey()[0] + entryList.get(0).getKey()[1], join);
@@ -234,8 +236,22 @@ class Select extends TestablePlan {
       // need to update the iterator list
       iteratorMap.remove(entryList.get(0).getKey()[0]);
       iteratorMap.remove(entryList.get(0).getKey()[1]);
+
+      finalIterator = new Projection(join, fieldNums);
+    } else if (entryList.size() > 1){
+      System.out.println("join " + entryList.get(0).getKey()[0] + " " + entryList.get(0).getKey()[1]);
+      SimpleJoin join = new SimpleJoin(iteratorMap.get(entryList.get(0).getKey()[0]), iteratorMap.get(entryList.get(0).getKey()[1]), entryList.get(0).getValue().getKey());
+      iteratorMap.put(entryList.get(0).getKey()[0] + entryList.get(0).getKey()[1], join);
+
+      // need to update the iterator list
+      iteratorMap.remove(entryList.get(0).getKey()[0]);
+      iteratorMap.remove(entryList.get(0).getKey()[1]);
+
+      // there are more joins to be done
     } else {
-      // set final iterator
+      List<Map.Entry<String, Iterator>> iter = new ArrayList<>();
+      iter.addAll(iteratorMap.entrySet());
+      finalIterator = new Projection(iter.get(0).getValue(), fieldNums);
     }
 
     // explaining for testing purposes
@@ -294,10 +310,10 @@ class Select extends TestablePlan {
    */
   public void execute() {
     if (explain) {
-      // finalIterator.explain(0);
-      // finalIterator.close();
+      finalIterator.explain(0);
+      finalIterator.close();
     } else {
-      // finalIterator.execute();
+      finalIterator.execute();
     }
 
 
