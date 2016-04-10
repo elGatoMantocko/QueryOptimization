@@ -15,15 +15,15 @@ CREATE TABLE Courses (cid INTEGER, title STRING(50));
 CREATE TABLE Grades (gsid INTEGER, gcid INTEGER, points FLOAT);
 CREATE TABLE Foo (a INTEGER, b INTEGER, c INTEGER, d INTEGER, e INTEGER);
 
-CREATE INDEX IX_Age ON Students(Age);
+CREATE INDEX IX_Age ON Students(age);
+CREATE INDEX IX_Points ON Grades(points);
+CREATE INDEX IX_Name ON Students(name);
 
 INSERT INTO Students VALUES (1, 'Alice', 25.67);
 INSERT INTO Students VALUES (2, 'Chris', 12.34);
 INSERT INTO Students VALUES (3, 'Bob', 30.0);
 INSERT INTO Students VALUES (4, 'Andy', 50.0);
 INSERT INTO Students VALUES (5, 'Ron', 30.0);
-
-CREATE INDEX IX_Name ON Students(Name);
 
 INSERT INTO Courses VALUES (448, 'DB Fun');
 INSERT INTO Courses VALUES (348, 'Less Cool');
@@ -46,12 +46,16 @@ INSERT INTO Foo VALUES (1, 4, 3, 4, 6);
 
 SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0;
 explain SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0;
+SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points = 3.0;
+explain SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points = 3.0;
 SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0 OR sid = gsid AND points <= 2.5;
 explain SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0 OR sid = gsid AND points <= 2.5;
 SELECT * FROM Foo WHERE a = 1 and b = 2 or c = 3 and d = 4 and e = 5;
 explain SELECT * FROM Foo WHERE a = 1 and b = 2 or c = 3 and d = 4 and e = 5;
 SELECT * FROM Students, Grades WHERE sid = gsid AND age = 30.0;
 explain SELECT * FROM Students, Grades WHERE sid = gsid AND age = 30.0;
+SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >=400;
+explain SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;
 
 STATS
 

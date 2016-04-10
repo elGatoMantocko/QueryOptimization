@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Map;
 
 /**
@@ -21,11 +20,9 @@ class Select extends TestablePlan {
 
   private String[] tables;
   private String[] cols;
-  private SortKey[] orders;
   private Predicate[][] preds;
   private Schema schema;
   private boolean explain;
-  private boolean distinct;
 
   private Iterator finalIterator;
 
@@ -37,14 +34,12 @@ class Select extends TestablePlan {
   public Select(AST_Select tree) throws QueryException {
 
     this.tables = tree.getTables();
-    this.orders = tree.getOrders();
     this.preds = tree.getPredicates();
     this.cols = tree.getColumns();
     this.schema = new Schema(0);
     this.explain = tree.isExplain;
-    this.distinct = tree.isDistinct;
 
-    HashMap<String, IndexDesc> indexes = new HashMap<String, IndexDesc>();
+    HashMap<String, ArrayList<IndexDesc>> indexes = new HashMap<String, ArrayList<IndexDesc>>();
     HashMap<String, Iterator> iteratorMap = new HashMap<String, Iterator>();
     ArrayList<Predicate[]> predsList = new ArrayList<Predicate[]>();
 
@@ -64,7 +59,12 @@ class Select extends TestablePlan {
         // this could possibly be bad if there are multiple
         //  indexes with different names that have the same column names
         for (IndexDesc desc : Minibase.SystemCatalog.getIndexes(table)) {
-          indexes.put(desc.columnName.toLowerCase(), desc);
+          if (indexes.get(table) == null) {
+            indexes.put(table, new ArrayList<IndexDesc>());
+            indexes.get(table).add(desc);
+          } else {
+            indexes.get(table).add(desc);
+          }
         }
 
         // create a new filescan out of the current table
@@ -87,6 +87,114 @@ class Select extends TestablePlan {
       throw e;
     }
 
+    pushSelectionOperator(iteratorMap, indexes, predsList);
+    while (iteratorMap.size() != 1 && predsList.size() != 0) {
+      pushJoinOperator(iteratorMap, predsList);
+      pushSelectionOperator(iteratorMap, indexes, predsList);
+    }
+
+    List<Map.Entry<String, Iterator>> entries = new ArrayList<>();
+    entries.addAll(iteratorMap.entrySet());
+    if (fieldNums.length > 0) {
+      finalIterator = new Projection(entries.get(0).getValue(), fieldNums);
+    } else {
+      finalIterator = entries.get(0).getValue();
+    }
+
+    // explaining for testing purposes
+    // finalIterator.explain(0);
+    setFinalIterator(finalIterator);
+  } // public Select(AST_Select tree) throws QueryException
+
+  private void pushJoinOperator(HashMap<String, Iterator> iteratorMap, ArrayList<Predicate[]> predsList) {
+    // build the finalIterator by determining join order of the iteratorMap
+    System.out.println(iteratorMap);
+    String[] fileNames = iteratorMap.keySet().toArray(new String[iteratorMap.size()]);
+    // for each table we have to see what the join cost is for every other table
+    String[] joinToDo = new String[2];
+    float costOfJoin = Float.MAX_VALUE;
+
+    Predicate[] predToJoinOn = null;
+    float costOfJoinPred = Float.MAX_VALUE;
+
+    for (int i = 0; i < fileNames.length; i++) {
+      // this returns an iterator of all of the indexes on the left table
+      //  with info about where it is in the table
+      int leftCount = Minibase.SystemCatalog.getRecCount(fileNames[i]);
+      Schema leftSchema = Minibase.SystemCatalog.getSchema(fileNames[i]);
+      for (int j = i + 1; j < fileNames.length; j++) {
+        // this returns an iterator of all of the indexes on the right table
+        //  with info about where it is in the table
+        int rightCount = Minibase.SystemCatalog.getRecCount(fileNames[j]);
+        Schema rightSchema = Minibase.SystemCatalog.getSchema(fileNames[j]);
+        System.out.print("compute cost of join " + fileNames[i] + ": " + leftCount + " " + fileNames[j] + ": " + rightCount);
+
+        Schema joinedSchema = Schema.join(leftSchema, rightSchema);
+        // for each of the or candidates for a join predicate
+        //  we need to determine which predicate works best with this particular join
+        for (Predicate[] candidate : predsList) {
+          boolean valid = true;
+          int reduction = 1; // for now just assume cross
+          for (Predicate pred : candidate) {
+            // check that all of the or predicats are valid on the current join
+            if (valid = valid && pred.validate(joinedSchema)) {
+              // first see if there is an index on any col in the pred
+              if ((pred.getLtype() == AttrType.COLNAME || pred.getLtype() == AttrType.FIELDNO) && 
+                  (pred.getRtype() == AttrType.COLNAME || pred.getRtype() == AttrType.FIELDNO) && 
+                  pred.getOper() == AttrOperator.EQ) {
+                // find the largest reduction factor between 10, number of keys on left, and number of keys on right
+                Integer[] reds = new Integer[] { new Integer(10), new Integer(getNumIndexKeys(fileNames[i])), new Integer(getNumIndexKeys(fileNames[j])) };
+                reduction = Collections.max(Arrays.asList(reds));
+              } else if ((pred.getLtype() == AttrType.COLNAME || pred.getLtype() == AttrType.FIELDNO) && 
+                  !(pred.getRtype() == AttrType.COLNAME || pred.getRtype() == AttrType.FIELDNO) && 
+                  pred.getOper() == AttrOperator.EQ) {
+                // find the largest reduction factor between 2, number of keys on left, and number of keys on right
+                Integer[] reds = new Integer[] { new Integer(10), new Integer(getNumIndexKeys(fileNames[i])), new Integer(getNumIndexKeys(fileNames[j])) };
+                reduction = Collections.max(Arrays.asList(reds));
+              } else if ((pred.getLtype() == AttrType.COLNAME || pred.getLtype() == AttrType.FIELDNO) && 
+                  !(pred.getRtype() == AttrType.COLNAME || pred.getRtype() == AttrType.FIELDNO) && 
+                  pred.getOper() != AttrOperator.EQ) {
+                // find the largest reduction factor between 10, number of keys on left, and number of keys on right
+                Integer[] reds = new Integer[] { new Integer(2), new Integer(getNumIndexKeys(fileNames[i])), new Integer(getNumIndexKeys(fileNames[j])) };
+                reduction = Collections.max(Arrays.asList(reds));
+              }
+            }
+          }
+
+          // all of the or preds passed and we can use it to create a score
+          if (valid && ((float)(leftCount * rightCount) / (float)reduction) < costOfJoinPred) {
+            predToJoinOn = candidate;
+            costOfJoinPred = (float)(leftCount * rightCount) / (float)reduction;
+          }
+        }
+
+        if (predToJoinOn == null) {
+          costOfJoinPred = leftCount * rightCount;
+        }
+
+        if (costOfJoinPred < costOfJoin) {
+          joinToDo = new String[] { fileNames[i], fileNames[j] };
+          costOfJoin = costOfJoinPred;
+        }
+        System.out.println(" " + costOfJoin);
+      }
+    }
+
+    System.out.println("join " + joinToDo[0] + " " + joinToDo[1]);
+    SimpleJoin join;
+    if (predToJoinOn != null) {
+      join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]), predToJoinOn);
+    } else {
+      join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]));
+    }
+    iteratorMap.put(joinToDo[0] + joinToDo[1], join);
+
+    // need to update the iterator list
+    iteratorMap.remove(joinToDo[0]);
+    iteratorMap.remove(joinToDo[1]);
+  }
+
+  private void pushSelectionOperator(HashMap<String, Iterator> iteratorMap, HashMap<String, ArrayList<IndexDesc>> indexes, ArrayList<Predicate[]> predsList) {
     // for each table being joined
     for (Map.Entry<String, Iterator> entry : iteratorMap.entrySet()) {
       // save the schema for this table
@@ -104,13 +212,21 @@ class Select extends TestablePlan {
           if (canPushSelect = canPushSelect && pred.validate(tableSchema)) {
             // build keyscan on tables with indexes on a row in the pred
             //  if there is an index on the predicate's left value
-            if (indexes.containsKey(((String)pred.getLeft()).toLowerCase())) {
-              IndexDesc desc = indexes.get(pred.getLeft());
-              HashIndex index = new HashIndex(desc.indexName);
-              KeyScan scan = new KeyScan(tableSchema, index, new SearchKey(pred.getRight()), new HeapFile(desc.indexName));
-              
-              iteratorMap.get(entry.getKey()).close();
-              iteratorMap.put(entry.getKey(), scan);
+            if (indexes.containsKey(entry.getKey())) {
+              for (IndexDesc desc : indexes.get(entry.getKey())) {
+                if (pred.getLtype() == AttrType.COLNAME && desc.columnName.equals(pred.getLeft())) {
+                  HashIndex index = new HashIndex(desc.indexName);
+                  Iterator scan;
+                  if (pred.getOper() == AttrOperator.EQ) {
+                    scan = new KeyScan(tableSchema, index, new SearchKey(pred.getRight()), new HeapFile(desc.tableName));
+                  } else {
+                    scan = new IndexScan(tableSchema, index, new HeapFile(desc.tableName));
+                  }
+                  
+                  iteratorMap.get(entry.getKey()).close();
+                  iteratorMap.put(entry.getKey(), scan);
+                }
+              }
             }
           }
         }
@@ -123,66 +239,57 @@ class Select extends TestablePlan {
         }
       }
     } // push selections
+  }
 
-    String[] tables = iteratorMap.keySet().toArray(new String[iteratorMap.size()]);
-    Iterator[] iters = iteratorMap.values().toArray(new Iterator[iteratorMap.size()]);
+  private int getNumIndexKeys(String fileName) {
+    return 1;
+  }
 
-    // if there is more than one iterator, we need to make some join(s)
-    if (iters.length > 1) {
+  private int indexCostReduction(Iterator tabIndexes, String fileName, Schema schema, Predicate pred) {
+    int reduction = 10;
+    if (pred.getLtype() == AttrType.COLNAME) {
+      // need to reset the left indexes
+      tabIndexes.restart();
 
-      // we need to estimate the cost of joining all relations with eachother
-      //  use a reduction factor for relations with indexed columns
-      HashMap<String[], Integer> joinCost = new HashMap<String[], Integer>();
-      for (int i = 0; i < tables.length; i++) {
-        for (int j = i + 1; j < tables.length; j++) {
-          // calculate the cost of joining tables[i] with tables[j]
-          //  store that cost in joinCost as <sort(iTable + jTable), score>
-          //   this probably wont be the final method to keep score,
-          //   but I just wanted to test the theory
-          joinCost.put(new String[] { tables[j], tables[i] }, 0);
-        }
+      // find all indexes on the left colname
+      Selection lhsIndexes = new Selection(tabIndexes, new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 6, AttrType.STRING, (String)pred.getLeft()));
+      if (lhsIndexes.hasNext()) {
+        // there was at least one index found for that column
+        //  this means that we can apply a much better reduction factor
+        // TODO: we need to figure out the number of keys in that index here
       }
 
-      HashMap<Predicate[], Integer> score = new HashMap<Predicate[], Integer>();
-      for (Predicate[] candidate : predsList) {
-        score.put(candidate, new Integer(0));
-        for (Predicate pred : candidate) {
-          if (pred.getLtype() == AttrType.COLNAME && pred.getRtype() == AttrType.COLNAME && pred.getOper() == AttrOperator.EQ) {
-            score.put(candidate, new Integer(score.get(candidate) + 1));
-          }
-        }
-      }
-
-      List<Map.Entry<Predicate[], Integer>> entryList = new ArrayList<>();
-      entryList.addAll(score.entrySet());
-      Collections.sort(entryList, new Comparator<Map.Entry<Predicate[], Integer>>() {
-        @Override
-        public int compare(Map.Entry<Predicate[], Integer> left, Map.Entry<Predicate[], Integer> right) {
-          return right.getValue() - left.getValue();
-        }
-      });
-
-      predsList.remove(entryList.get(0).getKey());
-      finalIterator = new SimpleJoin(iters[0], iters[1], entryList.get(0).getKey());
-
-      // this is really bad and shouldn't work
-      for (int i = 2; i < iters.length; i++) {
-        finalIterator = new SimpleJoin(finalIterator, iters[i], null);
-      }
-    } else {
-      // if its just one, then the final iterator can be set to that iterator
-      finalIterator = iters[0];
+      lhsIndexes.close();
     }
 
-    // if the query is asking to project columns, build the projection
-    if (cols != null && cols.length > 0) {
-      finalIterator = new Projection(finalIterator, fieldNums);
+    if (pred.getRtype() == AttrType.COLNAME) {
+      // need to reset the left indexes
+      tabIndexes.restart();
+
+      // find all indexes on the right colname
+      Selection rhsIndexes = new Selection(tabIndexes, new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 6, AttrType.STRING, (String)pred.getLeft()));
+      if (rhsIndexes.hasNext()) {
+        // there was at least one index found for that column
+        //  this means that we can apply a much better reduction factor
+        // TODO: we need to figure out the number of keys in that index here
+      }
+
+      rhsIndexes.close();
     }
 
-    // explaining for testing purposes
-    // finalIterator.explain(0);
-    setFinalIterator(finalIterator);
-  } // public Select(AST_Select tree) throws QueryException
+    return reduction;
+  }
+
+  private Iterator getIndexData() {
+    FileScan attScan = new FileScan(Minibase.SystemCatalog.s_att, Minibase.SystemCatalog.f_att);
+    FileScan indScan = new FileScan(Minibase.SystemCatalog.s_ind, Minibase.SystemCatalog.f_ind);
+
+    SimpleJoin indexData = new SimpleJoin(attScan, indScan, new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 4, AttrType.FIELDNO, 7));
+
+    Projection reduceCols = new Projection(indexData, 0, 1, 2, 3, 4, 5);
+
+    return reduceCols;
+  }
 
   /**
    * Executes the plan and prints applicable output.
