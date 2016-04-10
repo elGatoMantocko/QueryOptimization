@@ -215,7 +215,11 @@ class Select extends TestablePlan {
       iteratorMap.remove(joinToDo[0]);
       iteratorMap.remove(joinToDo[1]);
 
-      finalIterator = new Projection(join, fieldNums);
+      if (fieldNums.length > 0) {
+        finalIterator = new Projection(join, fieldNums);
+      } else {
+        finalIterator = join;
+      }
     } else {
       List<Map.Entry<String, Iterator>> iter = new ArrayList<>();
       iter.addAll(iteratorMap.entrySet());
