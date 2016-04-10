@@ -110,9 +110,9 @@ class Select extends TestablePlan {
                   HashIndex index = new HashIndex(desc.indexName);
                   Iterator scan;
                   if (pred.getOper() == AttrOperator.EQ) {
-                    scan = new KeyScan(tableSchema, index, new SearchKey(pred.getRight()), new HeapFile(desc.indexName));
+                    scan = new KeyScan(tableSchema, index, new SearchKey(pred.getRight()), new HeapFile(desc.tableName));
                   } else {
-                    scan = new IndexScan(tableSchema, index, new HeapFile(desc.indexName));
+                    scan = new IndexScan(tableSchema, index, new HeapFile(desc.tableName));
                   }
                   
                   iteratorMap.get(entry.getKey()).close();
@@ -145,22 +145,16 @@ class Select extends TestablePlan {
     for (int i = 0; i < fileNames.length; i++) {
       // this returns an iterator of all of the indexes on the left table
       //  with info about where it is in the table
-      Selection leftIndexes = new Selection(getIndexData(), new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 0, AttrType.STRING, fileNames[i]));
-
       int leftCount = Minibase.SystemCatalog.getRecCount(fileNames[i]);
       Schema leftSchema = Minibase.SystemCatalog.getSchema(fileNames[i]);
-
       for (int j = i + 1; j < fileNames.length; j++) {
         // this returns an iterator of all of the indexes on the right table
         //  with info about where it is in the table
-        Selection rightIndexes = new Selection(getIndexData(), new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 1, AttrType.STRING, fileNames[j]));
-
         int rightCount = Minibase.SystemCatalog.getRecCount(fileNames[j]);
         Schema rightSchema = Minibase.SystemCatalog.getSchema(fileNames[j]);
         System.out.print("compute cost of join " + fileNames[i] + ": " + leftCount + " " + fileNames[j] + ": " + rightCount);
 
         Schema joinedSchema = Schema.join(leftSchema, rightSchema);
-        
         // for each of the or candidates for a join predicate
         //  we need to determine which predicate works best with this particular join
         for (Predicate[] candidate : predsList) {
