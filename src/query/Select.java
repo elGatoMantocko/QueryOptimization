@@ -128,8 +128,11 @@ class Select extends TestablePlan {
     System.out.println(iteratorMap);
     String[] fileNames = iteratorMap.keySet().toArray(new String[iteratorMap.size()]);
     // for each table we have to see what the join cost is for every other table
+    String[] joinToDo = new String[2];
+    float costOfJoin = Float.MAX_VALUE;
 
-    HashMap<String[], Map.Entry<Predicate[], Float>> joinCands = new HashMap<>();
+    Predicate[] predToJoinOn = null;
+    float costOfJoinPred = Float.MAX_VALUE;
 
     for (int i = 0; i < fileNames.length; i++) {
       // this returns an iterator of all of the indexes on the left table
@@ -145,13 +148,12 @@ class Select extends TestablePlan {
 
         int rightCount = Minibase.SystemCatalog.getRecCount(fileNames[j]);
         Schema rightSchema = Minibase.SystemCatalog.getSchema(fileNames[j]);
-        System.out.println("compute cost of join " + fileNames[i] + ": " + leftCount + " " + fileNames[j] + ": " + rightCount);
+        System.out.print("compute cost of join " + fileNames[i] + ": " + leftCount + " " + fileNames[j] + ": " + rightCount);
 
         Schema joinedSchema = Schema.join(leftSchema, rightSchema);
         
         // for each of the or candidates for a join predicate
         //  we need to determine which predicate works best with this particular join
-        HashMap<Predicate[], Float> candList = new HashMap<Predicate[], Float>();
         for (Predicate[] candidate : predsList) {
           boolean valid = true;
           int reduction = 1; // for now just assume cross
@@ -182,70 +184,43 @@ class Select extends TestablePlan {
           }
 
           // all of the or preds passed and we can use it to create a score
-          Predicate[] truePred = new Predicate[] { new Predicate(AttrOperator.EQ, AttrType.INTEGER, 1, AttrType.INTEGER, 1) };
-          if (valid) {
-            candList.put(candidate, new Float((float)(leftCount * rightCount) / (float)reduction));
-          } else {
-            candList.put(truePred, new Float(leftCount * rightCount));
+          if (valid && ((float)(leftCount * rightCount) / (float)reduction) < costOfJoinPred) {
+            predToJoinOn = candidate;
+            costOfJoinPred = (float)(leftCount * rightCount) / (float)reduction;
           }
         }
 
-        // find the best predicate to join on from the list
-        List<Map.Entry<Predicate[], Float>> entryList = new ArrayList<>();
-        entryList.addAll(candList.entrySet());
-        Collections.sort(entryList, new Comparator<Map.Entry<Predicate[], Float>>() {
-          @Override
-          public int compare(Map.Entry<Predicate[], Float> left, Map.Entry<Predicate[], Float> right) {
-            if (left.getValue() > right.getValue()) {
-              return 1;
-            } else if (left.getValue() < right.getValue()) {
-              return -1;
-            } else {
-              return 0;
-            }
-          }
-        });
+        if (predToJoinOn == null) {
+          predToJoinOn = new Predicate[] { new Predicate(AttrOperator.EQ, AttrType.INTEGER, 1, AttrType.INTEGER, 1) };
+          costOfJoinPred = leftCount * rightCount;
+        }
 
-        joinCands.put(new String[] { fileNames[i], fileNames[j] }, entryList.get(0));
+        if (costOfJoinPred < costOfJoin) {
+          joinToDo = new String[] { fileNames[i], fileNames[j] };
+          costOfJoin = costOfJoinPred;
+        }
+        System.out.println(" " + costOfJoin);
       }
     }
 
-    // sort the join candidates
-    List<Map.Entry<String[], Map.Entry<Predicate[], Float>>> entryList = new ArrayList<>();
-    entryList.addAll(joinCands.entrySet());
-    Collections.sort(entryList, new Comparator<Map.Entry<String[], Map.Entry<Predicate[], Float>>>() {
-      @Override
-      public int compare(Map.Entry<String[], Map.Entry<Predicate[], Float>> left, Map.Entry<String[], Map.Entry<Predicate[], Float>> right) {
-        if (left.getValue().getValue() > right.getValue().getValue()) {
-          return 1;
-        } else if (left.getValue().getValue() < right.getValue().getValue()) {
-          return -1;
-        } else {
-          return 0;
-        }
-      }
-    });
-
-    System.out.println(entryList.size());
-
-    if (entryList.size() == 1) {
-      System.out.println("join " + entryList.get(0).getKey()[0] + " " + entryList.get(0).getKey()[1]);
-      SimpleJoin join = new SimpleJoin(iteratorMap.get(entryList.get(0).getKey()[0]), iteratorMap.get(entryList.get(0).getKey()[1]), entryList.get(0).getValue().getKey());
-      iteratorMap.put(entryList.get(0).getKey()[0] + entryList.get(0).getKey()[1], join);
+    if (joinToDo.length > 0) {
+      System.out.println("join " + joinToDo[0] + " " + joinToDo[1]);
+      SimpleJoin join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]), predToJoinOn);
+      iteratorMap.put(joinToDo[0] + joinToDo[1], join);
 
       // need to update the iterator list
-      iteratorMap.remove(entryList.get(0).getKey()[0]);
-      iteratorMap.remove(entryList.get(0).getKey()[1]);
+      iteratorMap.remove(joinToDo[0]);
+      iteratorMap.remove(joinToDo[1]);
 
       finalIterator = new Projection(join, fieldNums);
-    } else if (entryList.size() > 1){
-      System.out.println("join " + entryList.get(0).getKey()[0] + " " + entryList.get(0).getKey()[1]);
-      SimpleJoin join = new SimpleJoin(iteratorMap.get(entryList.get(0).getKey()[0]), iteratorMap.get(entryList.get(0).getKey()[1]), entryList.get(0).getValue().getKey());
-      iteratorMap.put(entryList.get(0).getKey()[0] + entryList.get(0).getKey()[1], join);
+    } else if (iteratorMap.size() > 1){
+      System.out.println("join " + joinToDo[0] + " " + joinToDo[1]);
+      SimpleJoin join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]), predToJoinOn);
+      iteratorMap.put(joinToDo[0] + joinToDo[1], join);
 
       // need to update the iterator list
-      iteratorMap.remove(entryList.get(0).getKey()[0]);
-      iteratorMap.remove(entryList.get(0).getKey()[1]);
+      iteratorMap.remove(joinToDo[0]);
+      iteratorMap.remove(joinToDo[1]);
 
       // there are more joins to be done
     } else {
@@ -276,6 +251,8 @@ class Select extends TestablePlan {
         //  this means that we can apply a much better reduction factor
         // TODO: we need to figure out the number of keys in that index here
       }
+
+      lhsIndexes.close();
     }
 
     if (pred.getRtype() == AttrType.COLNAME) {
@@ -289,6 +266,8 @@ class Select extends TestablePlan {
         //  this means that we can apply a much better reduction factor
         // TODO: we need to figure out the number of keys in that index here
       }
+
+      rhsIndexes.close();
     }
 
     return reduction;
