@@ -141,6 +141,7 @@ class Select extends TestablePlan {
 
       int leftCount = Minibase.SystemCatalog.getRecCount(fileNames[i]);
       Schema leftSchema = Minibase.SystemCatalog.getSchema(fileNames[i]);
+
       for (int j = i + 1; j < fileNames.length; j++) {
         // this returns an iterator of all of the indexes on the right table
         //  with info about where it is in the table
