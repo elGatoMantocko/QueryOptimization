@@ -108,7 +108,6 @@ class Select extends TestablePlan {
 
   private void pushJoinOperator(HashMap<String, Iterator> iteratorMap, ArrayList<Predicate[]> predsList) {
     // build the finalIterator by determining join order of the iteratorMap
-    System.out.println(iteratorMap);
     String[] fileNames = iteratorMap.keySet().toArray(new String[iteratorMap.size()]);
     // for each table we have to see what the join cost is for every other table
     String[] joinToDo = new String[2];
@@ -127,7 +126,6 @@ class Select extends TestablePlan {
         //  with info about where it is in the table
         int rightCount = Minibase.SystemCatalog.getRecCount(fileNames[j]);
         Schema rightSchema = Minibase.SystemCatalog.getSchema(fileNames[j]);
-        System.out.print("compute cost of join " + fileNames[i] + ": " + leftCount + " " + fileNames[j] + ": " + rightCount);
 
         Schema joinedSchema = Schema.join(leftSchema, rightSchema);
         // for each of the or candidates for a join predicate
@@ -143,20 +141,17 @@ class Select extends TestablePlan {
                   (pred.getRtype() == AttrType.COLNAME || pred.getRtype() == AttrType.FIELDNO) && 
                   pred.getOper() == AttrOperator.EQ) {
                 // find the largest reduction factor between 10, number of keys on left, and number of keys on right
-                Integer[] reds = new Integer[] { new Integer(10), new Integer(getNumIndexKeys(fileNames[i])), new Integer(getNumIndexKeys(fileNames[j])) };
-                reduction = Collections.max(Arrays.asList(reds));
+                reduction = 10;
               } else if ((pred.getLtype() == AttrType.COLNAME || pred.getLtype() == AttrType.FIELDNO) && 
                   !(pred.getRtype() == AttrType.COLNAME || pred.getRtype() == AttrType.FIELDNO) && 
                   pred.getOper() == AttrOperator.EQ) {
                 // find the largest reduction factor between 2, number of keys on left, and number of keys on right
-                Integer[] reds = new Integer[] { new Integer(10), new Integer(getNumIndexKeys(fileNames[i])), new Integer(getNumIndexKeys(fileNames[j])) };
-                reduction = Collections.max(Arrays.asList(reds));
+                reduction = 10;
               } else if ((pred.getLtype() == AttrType.COLNAME || pred.getLtype() == AttrType.FIELDNO) && 
                   !(pred.getRtype() == AttrType.COLNAME || pred.getRtype() == AttrType.FIELDNO) && 
                   pred.getOper() != AttrOperator.EQ) {
                 // find the largest reduction factor between 10, number of keys on left, and number of keys on right
-                Integer[] reds = new Integer[] { new Integer(2), new Integer(getNumIndexKeys(fileNames[i])), new Integer(getNumIndexKeys(fileNames[j])) };
-                reduction = Collections.max(Arrays.asList(reds));
+                reduction = 3;
               }
             }
           }
@@ -176,11 +171,9 @@ class Select extends TestablePlan {
           joinToDo = new String[] { fileNames[i], fileNames[j] };
           costOfJoin = costOfJoinPred;
         }
-        System.out.println(" " + costOfJoin);
       }
     }
 
-    System.out.println("join " + joinToDo[0] + " " + joinToDo[1]);
     SimpleJoin join;
     if (predToJoinOn != null) {
       join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]), predToJoinOn);
@@ -241,56 +234,6 @@ class Select extends TestablePlan {
     } // push selections
   }
 
-  private int getNumIndexKeys(String fileName) {
-    return 1;
-  }
-
-  private int indexCostReduction(Iterator tabIndexes, String fileName, Schema schema, Predicate pred) {
-    int reduction = 10;
-    if (pred.getLtype() == AttrType.COLNAME) {
-      // need to reset the left indexes
-      tabIndexes.restart();
-
-      // find all indexes on the left colname
-      Selection lhsIndexes = new Selection(tabIndexes, new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 6, AttrType.STRING, (String)pred.getLeft()));
-      if (lhsIndexes.hasNext()) {
-        // there was at least one index found for that column
-        //  this means that we can apply a much better reduction factor
-        // TODO: we need to figure out the number of keys in that index here
-      }
-
-      lhsIndexes.close();
-    }
-
-    if (pred.getRtype() == AttrType.COLNAME) {
-      // need to reset the left indexes
-      tabIndexes.restart();
-
-      // find all indexes on the right colname
-      Selection rhsIndexes = new Selection(tabIndexes, new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 6, AttrType.STRING, (String)pred.getLeft()));
-      if (rhsIndexes.hasNext()) {
-        // there was at least one index found for that column
-        //  this means that we can apply a much better reduction factor
-        // TODO: we need to figure out the number of keys in that index here
-      }
-
-      rhsIndexes.close();
-    }
-
-    return reduction;
-  }
-
-  private Iterator getIndexData() {
-    FileScan attScan = new FileScan(Minibase.SystemCatalog.s_att, Minibase.SystemCatalog.f_att);
-    FileScan indScan = new FileScan(Minibase.SystemCatalog.s_ind, Minibase.SystemCatalog.f_ind);
-
-    SimpleJoin indexData = new SimpleJoin(attScan, indScan, new Predicate(AttrOperator.EQ, AttrType.FIELDNO, 4, AttrType.FIELDNO, 7));
-
-    Projection reduceCols = new Projection(indexData, 0, 1, 2, 3, 4, 5);
-
-    return reduceCols;
-  }
-
   /**
    * Executes the plan and prints applicable output.
    */
@@ -301,10 +244,6 @@ class Select extends TestablePlan {
     } else {
       finalIterator.execute();
     }
-
-
-    // System.out.println("(Not implemented)");
-
   } // public void execute()
 
 } // class Select implements Plan
