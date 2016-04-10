@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Map;
 
 /**
@@ -21,11 +20,9 @@ class Select extends TestablePlan {
 
   private String[] tables;
   private String[] cols;
-  private SortKey[] orders;
   private Predicate[][] preds;
   private Schema schema;
   private boolean explain;
-  private boolean distinct;
 
   private Iterator finalIterator;
 
@@ -37,14 +34,12 @@ class Select extends TestablePlan {
   public Select(AST_Select tree) throws QueryException {
 
     this.tables = tree.getTables();
-    this.orders = tree.getOrders();
     this.preds = tree.getPredicates();
     this.cols = tree.getColumns();
     this.schema = new Schema(0);
     this.explain = tree.isExplain;
-    this.distinct = tree.isDistinct;
 
-    HashMap<String, IndexDesc> indexes = new HashMap<String, IndexDesc>();
+    HashMap<String, ArrayList<IndexDesc>> indexes = new HashMap<String, ArrayList<IndexDesc>>();
     HashMap<String, Iterator> iteratorMap = new HashMap<String, Iterator>();
     ArrayList<Predicate[]> predsList = new ArrayList<Predicate[]>();
 
@@ -64,7 +59,12 @@ class Select extends TestablePlan {
         // this could possibly be bad if there are multiple
         //  indexes with different names that have the same column names
         for (IndexDesc desc : Minibase.SystemCatalog.getIndexes(table)) {
-          indexes.put(desc.columnName.toLowerCase(), desc);
+          if (indexes.get(table) == null) {
+            indexes.put(table, new ArrayList<IndexDesc>());
+            indexes.get(table).add(desc);
+          } else {
+            indexes.get(table).add(desc);
+          }
         }
 
         // create a new filescan out of the current table
@@ -104,13 +104,16 @@ class Select extends TestablePlan {
           if (canPushSelect = canPushSelect && pred.validate(tableSchema)) {
             // build keyscan on tables with indexes on a row in the pred
             //  if there is an index on the predicate's left value
-            if (indexes.containsKey(((String)pred.getLeft()).toLowerCase())) {
-              IndexDesc desc = indexes.get(pred.getLeft());
-              HashIndex index = new HashIndex(desc.indexName);
-              KeyScan scan = new KeyScan(tableSchema, index, new SearchKey(pred.getRight()), new HeapFile(desc.indexName));
-              
-              iteratorMap.get(entry.getKey()).close();
-              iteratorMap.put(entry.getKey(), scan);
+            if (indexes.containsKey(entry.getKey())) {
+              for (IndexDesc desc : indexes.get(entry.getKey())) {
+                if (pred.getLtype() == AttrType.COLNAME && desc.columnName.equals(pred.getLeft())) {
+                  HashIndex index = new HashIndex(desc.indexName);
+                  KeyScan scan = new KeyScan(tableSchema, index, new SearchKey(pred.getRight()), new HeapFile(desc.indexName));
+                  
+                  iteratorMap.get(entry.getKey()).close();
+                  iteratorMap.put(entry.getKey(), scan);
+                }
+              }
             }
           }
         }
