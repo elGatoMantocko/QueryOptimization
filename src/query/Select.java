@@ -87,51 +87,26 @@ class Select extends TestablePlan {
       throw e;
     }
 
-    // for each table being joined
-    for (Map.Entry<String, Iterator> entry : iteratorMap.entrySet()) {
-      // save the schema for this table
-      Schema tableSchema = Minibase.SystemCatalog.getSchema(entry.getKey());
+    pushSelectionOperator(iteratorMap, indexes, predsList);
+    while (iteratorMap.size() != 1 && predsList.size() != 0) {
+      pushJoinOperator(iteratorMap, predsList);
+      pushSelectionOperator(iteratorMap, indexes, predsList);
+    }
 
-      // for all of the and predicates
-      for (int i = 0; i < preds.length; i++) {
-        // lets build a list of all of the passable or preds
-        boolean canPushSelect = true;
+    List<Map.Entry<String, Iterator>> entries = new ArrayList<>();
+    entries.addAll(iteratorMap.entrySet());
+    if (fieldNums.length > 0) {
+      finalIterator = new Projection(entries.get(0).getValue(), fieldNums);
+    } else {
+      finalIterator = entries.get(0).getValue();
+    }
 
-        // for all of the predicates in the or list
-        for (Predicate pred : preds[i]) {
-          // if the predicate is valid for the current table's schema
-          //  add it to the list of or predicates to push the selection down
-          if (canPushSelect = canPushSelect && pred.validate(tableSchema)) {
-            // build keyscan on tables with indexes on a row in the pred
-            //  if there is an index on the predicate's left value
-            if (indexes.containsKey(entry.getKey())) {
-              for (IndexDesc desc : indexes.get(entry.getKey())) {
-                if (pred.getLtype() == AttrType.COLNAME && desc.columnName.equals(pred.getLeft())) {
-                  HashIndex index = new HashIndex(desc.indexName);
-                  Iterator scan;
-                  if (pred.getOper() == AttrOperator.EQ) {
-                    scan = new KeyScan(tableSchema, index, new SearchKey(pred.getRight()), new HeapFile(desc.tableName));
-                  } else {
-                    scan = new IndexScan(tableSchema, index, new HeapFile(desc.tableName));
-                  }
-                  
-                  iteratorMap.get(entry.getKey()).close();
-                  iteratorMap.put(entry.getKey(), scan);
-                }
-              }
-            }
-          }
-        }
-        
-        // this will build a selection using the iterator in the map
-        //  if the iterator is a selection that means there is at least one and statement in the predicates
-        if (canPushSelect) {
-          predsList.remove(preds[i]);
-          iteratorMap.put(entry.getKey(), new Selection(iteratorMap.get(entry.getKey()), preds[i]));
-        }
-      }
-    } // push selections
+    // explaining for testing purposes
+    // finalIterator.explain(0);
+    setFinalIterator(finalIterator);
+  } // public Select(AST_Select tree) throws QueryException
 
+  private void pushJoinOperator(HashMap<String, Iterator> iteratorMap, ArrayList<Predicate[]> predsList) {
     // build the finalIterator by determining join order of the iteratorMap
     System.out.println(iteratorMap);
     String[] fileNames = iteratorMap.keySet().toArray(new String[iteratorMap.size()]);
@@ -206,34 +181,61 @@ class Select extends TestablePlan {
       }
     }
 
-    if (iteratorMap.size() > 1) {
-      System.out.println("join " + joinToDo[0] + " " + joinToDo[1]);
-      SimpleJoin join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]), predToJoinOn);
-      iteratorMap.put(joinToDo[0] + joinToDo[1], join);
+    System.out.println("join " + joinToDo[0] + " " + joinToDo[1]);
+    SimpleJoin join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]), predToJoinOn);
+    iteratorMap.put(joinToDo[0] + joinToDo[1], join);
 
-      // need to update the iterator list
-      iteratorMap.remove(joinToDo[0]);
-      iteratorMap.remove(joinToDo[1]);
+    // need to update the iterator list
+    iteratorMap.remove(joinToDo[0]);
+    iteratorMap.remove(joinToDo[1]);
+  }
 
-      if (fieldNums.length > 0) {
-        finalIterator = new Projection(join, fieldNums);
-      } else {
-        finalIterator = join;
+  private void pushSelectionOperator(HashMap<String, Iterator> iteratorMap, HashMap<String, ArrayList<IndexDesc>> indexes, ArrayList<Predicate[]> predsList) {
+    // for each table being joined
+    for (Map.Entry<String, Iterator> entry : iteratorMap.entrySet()) {
+      // save the schema for this table
+      Schema tableSchema = Minibase.SystemCatalog.getSchema(entry.getKey());
+
+      // for all of the and predicates
+      for (int i = 0; i < preds.length; i++) {
+        // lets build a list of all of the passable or preds
+        boolean canPushSelect = true;
+
+        // for all of the predicates in the or list
+        for (Predicate pred : preds[i]) {
+          // if the predicate is valid for the current table's schema
+          //  add it to the list of or predicates to push the selection down
+          if (canPushSelect = canPushSelect && pred.validate(tableSchema)) {
+            // build keyscan on tables with indexes on a row in the pred
+            //  if there is an index on the predicate's left value
+            if (indexes.containsKey(entry.getKey())) {
+              for (IndexDesc desc : indexes.get(entry.getKey())) {
+                if (pred.getLtype() == AttrType.COLNAME && desc.columnName.equals(pred.getLeft())) {
+                  HashIndex index = new HashIndex(desc.indexName);
+                  Iterator scan;
+                  if (pred.getOper() == AttrOperator.EQ) {
+                    scan = new KeyScan(tableSchema, index, new SearchKey(pred.getRight()), new HeapFile(desc.tableName));
+                  } else {
+                    scan = new IndexScan(tableSchema, index, new HeapFile(desc.tableName));
+                  }
+                  
+                  iteratorMap.get(entry.getKey()).close();
+                  iteratorMap.put(entry.getKey(), scan);
+                }
+              }
+            }
+          }
+        }
+        
+        // this will build a selection using the iterator in the map
+        //  if the iterator is a selection that means there is at least one and statement in the predicates
+        if (canPushSelect) {
+          predsList.remove(preds[i]);
+          iteratorMap.put(entry.getKey(), new Selection(iteratorMap.get(entry.getKey()), preds[i]));
+        }
       }
-    } else {
-      List<Map.Entry<String, Iterator>> iter = new ArrayList<>();
-      iter.addAll(iteratorMap.entrySet());
-      if (fieldNums.length > 0) {
-        finalIterator = new Projection(iter.get(0).getValue(), fieldNums);
-      } else {
-        finalIterator = iter.get(0).getValue();
-      }
-    }
-
-    // explaining for testing purposes
-    // finalIterator.explain(0);
-    setFinalIterator(finalIterator);
-  } // public Select(AST_Select tree) throws QueryException
+    } // push selections
+  }
 
   private int getNumIndexKeys(String fileName) {
     return 1;
