@@ -169,7 +169,6 @@ class Select extends TestablePlan {
         }
 
         if (predToJoinOn == null) {
-          predToJoinOn = new Predicate[] { new Predicate(AttrOperator.EQ, AttrType.INTEGER, 1, AttrType.INTEGER, 1) };
           costOfJoinPred = leftCount * rightCount;
         }
 
@@ -182,7 +181,12 @@ class Select extends TestablePlan {
     }
 
     System.out.println("join " + joinToDo[0] + " " + joinToDo[1]);
-    SimpleJoin join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]), predToJoinOn);
+    SimpleJoin join;
+    if (predToJoinOn != null) {
+      join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]), predToJoinOn);
+    } else {
+      join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]));
+    }
     iteratorMap.put(joinToDo[0] + joinToDo[1], join);
 
     // need to update the iterator list
