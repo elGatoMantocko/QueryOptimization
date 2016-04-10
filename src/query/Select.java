@@ -212,7 +212,7 @@ class Select extends TestablePlan {
       }
     }
 
-    if (joinToDo.length > 0) {
+    if (iteratorMap.size() > 1) {
       System.out.println("join " + joinToDo[0] + " " + joinToDo[1]);
       SimpleJoin join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]), predToJoinOn);
       iteratorMap.put(joinToDo[0] + joinToDo[1], join);
@@ -222,20 +222,14 @@ class Select extends TestablePlan {
       iteratorMap.remove(joinToDo[1]);
 
       finalIterator = new Projection(join, fieldNums);
-    } else if (iteratorMap.size() > 1){
-      System.out.println("join " + joinToDo[0] + " " + joinToDo[1]);
-      SimpleJoin join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]), predToJoinOn);
-      iteratorMap.put(joinToDo[0] + joinToDo[1], join);
-
-      // need to update the iterator list
-      iteratorMap.remove(joinToDo[0]);
-      iteratorMap.remove(joinToDo[1]);
-
-      // there are more joins to be done
     } else {
       List<Map.Entry<String, Iterator>> iter = new ArrayList<>();
       iter.addAll(iteratorMap.entrySet());
-      finalIterator = new Projection(iter.get(0).getValue(), fieldNums);
+      if (fieldNums.length > 0) {
+        finalIterator = new Projection(iter.get(0).getValue(), fieldNums);
+      } else {
+        finalIterator = iter.get(0).getValue();
+      }
     }
 
     // explaining for testing purposes
