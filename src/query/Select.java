@@ -108,7 +108,12 @@ class Select extends TestablePlan {
               for (IndexDesc desc : indexes.get(entry.getKey())) {
                 if (pred.getLtype() == AttrType.COLNAME && desc.columnName.equals(pred.getLeft())) {
                   HashIndex index = new HashIndex(desc.indexName);
-                  KeyScan scan = new KeyScan(tableSchema, index, new SearchKey(pred.getRight()), new HeapFile(desc.indexName));
+                  Iterator scan;
+                  if (pred.getOper() == AttrOperator.EQ) {
+                    scan = new KeyScan(tableSchema, index, new SearchKey(pred.getRight()), new HeapFile(desc.indexName));
+                  } else {
+                    scan = new IndexScan(tableSchema, index, new HeapFile(desc.indexName));
+                  }
                   
                   iteratorMap.get(entry.getKey()).close();
                   iteratorMap.put(entry.getKey(), scan);
