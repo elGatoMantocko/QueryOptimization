@@ -40,7 +40,7 @@ class Select extends TestablePlan {
     this.explain = tree.isExplain;
 
     HashMap<String, ArrayList<IndexDesc>> indexes = new HashMap<String, ArrayList<IndexDesc>>();
-    HashMap<String, Iterator> iteratorMap = new HashMap<String, Iterator>();
+    HashMap<TableData, Iterator> iteratorMap = new HashMap<TableData, Iterator>();
     ArrayList<Predicate[]> predsList = new ArrayList<Predicate[]>();
 
     for (Predicate[] p : preds) {
@@ -69,7 +69,7 @@ class Select extends TestablePlan {
 
         // create a new filescan out of the current table
         HeapFile file = new HeapFile(table);
-        iteratorMap.put(table, new FileScan(tableSchema, file));
+        iteratorMap.put(new TableData(table), new FileScan(tableSchema, file));
       }
 
       QueryCheck.predicates(schema, preds);
@@ -92,7 +92,7 @@ class Select extends TestablePlan {
       pushJoinOperator(iteratorMap, predsList);
     }
 
-    List<Map.Entry<String, Iterator>> entries = new ArrayList<>();
+    List<Map.Entry<TableData, Iterator>> entries = new ArrayList<>();
     entries.addAll(iteratorMap.entrySet());
     if (fieldNums.length > 0) {
       finalIterator = new Projection(entries.get(0).getValue(), fieldNums);
@@ -105,9 +105,9 @@ class Select extends TestablePlan {
     setFinalIterator(finalIterator);
   } // public Select(AST_Select tree) throws QueryException
 
-  private void pushJoinOperator(HashMap<String, Iterator> iteratorMap, ArrayList<Predicate[]> predsList) {
+  private void pushJoinOperator(HashMap<TableData, Iterator> iteratorMap, ArrayList<Predicate[]> predsList) {
     // build the finalIterator by determining join order of the iteratorMap
-    String[] fileNames = iteratorMap.keySet().toArray(new String[iteratorMap.size()]);
+    TableData[] fileNames = iteratorMap.keySet().toArray(new TableData[iteratorMap.size()]);
     // for each table we have to see what the join cost is for every other table
     String[] joinToDo = new String[2];
     float costOfJoin = Float.MAX_VALUE;
@@ -118,13 +118,13 @@ class Select extends TestablePlan {
     for (int i = 0; i < fileNames.length; i++) {
       // this returns an iterator of all of the indexes on the left table
       //  with info about where it is in the table
-      int leftCount = Minibase.SystemCatalog.getRecCount(fileNames[i]);
-      Schema leftSchema = Minibase.SystemCatalog.getSchema(fileNames[i]);
+      float leftCost = fileNames[i].cost;
+      Schema leftSchema = fileNames[i].schema;
       for (int j = i + 1; j < fileNames.length; j++) {
         // this returns an iterator of all of the indexes on the right table
         //  with info about where it is in the table
-        int rightCount = Minibase.SystemCatalog.getRecCount(fileNames[j]);
-        Schema rightSchema = Minibase.SystemCatalog.getSchema(fileNames[j]);
+        float rightCost = fileNames[j].cost;
+        Schema rightSchema = fileNames[j].schema;
 
         Schema joinedSchema = Schema.join(leftSchema, rightSchema);
         // for each of the or candidates for a join predicate
@@ -156,14 +156,14 @@ class Select extends TestablePlan {
           }
 
           // all of the or preds passed and we can use it to create a score
-          if (valid && ((float)(leftCount * rightCount) / (float)reduction) < costOfJoinPred) {
+          if (valid && ((float)(leftCost * rightCost) / (float)reduction) < costOfJoinPred) {
             predToJoinOn = candidate;
-            costOfJoinPred = (float)(leftCount * rightCount) / (float)reduction;
+            costOfJoinPred = (float)(leftCost * rightCost) / (float)reduction;
           }
         }
 
         if (predToJoinOn == null) {
-          costOfJoinPred = leftCount * rightCount;
+          costOfJoinPred = leftCost * rightCost;
         }
 
         if (costOfJoinPred < costOfJoin) {
@@ -186,9 +186,9 @@ class Select extends TestablePlan {
     iteratorMap.remove(joinToDo[1]);
   }
 
-  private void pushSelectionOperator(HashMap<String, Iterator> iteratorMap, HashMap<String, ArrayList<IndexDesc>> indexes, ArrayList<Predicate[]> predsList) {
+  private void pushSelectionOperator(HashMap<TableData, Iterator> iteratorMap, HashMap<String, ArrayList<IndexDesc>> indexes, ArrayList<Predicate[]> predsList) {
     // for each table being joined
-    for (Map.Entry<String, Iterator> entry : iteratorMap.entrySet()) {
+    for (Map.Entry<TableData, Iterator> entry : iteratorMap.entrySet()) {
       // save the schema for this table
       Schema tableSchema = Minibase.SystemCatalog.getSchema(entry.getKey());
 
@@ -261,6 +261,15 @@ class TableData extends Object {
     this.cost = (float)Minibase.SystemCatalog.getRecCount(table);
   }
 
+  private TableData(TableData copy) {
+    this.tables = new ArrayList<>();
+    this.tables.addAll(Arrays.asList(copy.getTables()));
+
+    this.schema = copy.schema;
+
+    this.cost = copy.cost;
+  }
+
   @Override
   public boolean equals(Object o) {
     return o instanceof TableData && 
@@ -269,14 +278,26 @@ class TableData extends Object {
       this.cost == ((TableData)o).cost;
   }
 
-  public void addTable(String table, float updatedCost) {
+  public void addTable(String table) {
     tables.add(table);
     schema = Schema.join(schema, Minibase.SystemCatalog.getSchema(table));
-    cost = updatedCost;
+  }
+
+  public void updateCost(float cost) {
+    this.cost = cost;
   }
 
   public String[] getTables() {
     return tables.toArray(new String[tables.size()]);
+  }
+
+  public static TableData join(TableData left, TableData right, float reduction) {
+    TableData join = new TableData(left);
+    for (String table : right.getTables()) {
+      left.addTable(table);
+    }
+    left.updateCost(left.cost * right.cost / reduction);
+    return left;
   }
 }
 
