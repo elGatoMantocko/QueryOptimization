@@ -61,4 +61,9 @@ public class ThreeTest extends MinibaseTest {
     public void testComplexThree() throws Exception {
         Msql.execute("SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
     }
+
+    @Test
+    public void testComplexThreeProj() throws Exception {
+        Msql.execute("SELECT name, cid, points FROM Students, Grades, Courses where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
+    }
 }
