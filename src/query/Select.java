@@ -87,10 +87,9 @@ class Select extends TestablePlan {
       throw e;
     }
 
-    pushSelectionOperator(iteratorMap, indexes, predsList);
     while (iteratorMap.size() != 1 && predsList.size() != 0) {
-      pushJoinOperator(iteratorMap, predsList);
       pushSelectionOperator(iteratorMap, indexes, predsList);
+      pushJoinOperator(iteratorMap, predsList);
     }
 
     List<Map.Entry<String, Iterator>> entries = new ArrayList<>();
@@ -247,3 +246,37 @@ class Select extends TestablePlan {
   } // public void execute()
 
 } // class Select implements Plan
+
+class TableData extends Object {
+  private ArrayList<String> tables;
+  protected Schema schema;
+  protected float cost;
+
+  public TableData(String table, float size) {
+    this.tables = new ArrayList<>();
+    this.tables.add(table);
+    
+    this.schema = Minibase.SystemCatalog.getSchema(table);
+
+    this.cost = size;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof TableData && 
+      Arrays.deepEquals(this.getTables(), ((TableData)o).getTables()) &&
+      this.schema.equals(((TableData)o).schema) &&
+      this.cost == ((TableData)o).cost;
+  }
+
+  public void addTable(String table, float updatedCost) {
+    tables.add(table);
+    schema = Schema.join(schema, Minibase.SystemCatalog.getSchema(table));
+    cost = updatedCost;
+  }
+
+  public String[] getTables() {
+    return tables.toArray(new String[tables.size()]);
+  }
+}
+
