@@ -252,13 +252,13 @@ class TableData extends Object {
   protected Schema schema;
   protected float cost;
 
-  public TableData(String table, float size) {
+  public TableData(String table) {
     this.tables = new ArrayList<>();
     this.tables.add(table);
     
     this.schema = Minibase.SystemCatalog.getSchema(table);
 
-    this.cost = size;
+    this.cost = (float)Minibase.SystemCatalog.getRecCount(table);
   }
 
   @Override
