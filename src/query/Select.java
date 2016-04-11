@@ -87,9 +87,14 @@ class Select extends TestablePlan {
       throw e;
     }
 
-    while (iteratorMap.size() != 1 && predsList.size() != 0) {
-      pushSelectionOperator(iteratorMap, indexes, predsList);
-      pushJoinOperator(iteratorMap, predsList);
+    while (iteratorMap.size() != 1 || predsList.size() != 0) {
+      if (predsList.size() != 0) {
+        pushSelectionOperator(iteratorMap, indexes, predsList);
+      }
+
+      if (iteratorMap.size() != 1) {
+        pushJoinOperator(iteratorMap, predsList);
+      }
     }
 
     List<Map.Entry<TableData, Iterator>> entries = new ArrayList<>();
@@ -109,7 +114,7 @@ class Select extends TestablePlan {
     // build the finalIterator by determining join order of the iteratorMap
     TableData[] fileNames = iteratorMap.keySet().toArray(new TableData[iteratorMap.size()]);
     // for each table we have to see what the join cost is for every other table
-    String[] joinToDo = new String[2];
+    TableData[] joinToDo = new TableData[2];
     float costOfJoin = Float.MAX_VALUE;
 
     Predicate[] predToJoinOn = null;
@@ -167,7 +172,7 @@ class Select extends TestablePlan {
         }
 
         if (costOfJoinPred < costOfJoin) {
-          joinToDo = new String[] { fileNames[i], fileNames[j] };
+          joinToDo = new TableData[] { fileNames[i], fileNames[j] };
           costOfJoin = costOfJoinPred;
         }
       }
@@ -176,10 +181,11 @@ class Select extends TestablePlan {
     SimpleJoin join;
     if (predToJoinOn != null) {
       join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]), predToJoinOn);
+      predsList.remove(predToJoinOn);
     } else {
       join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]));
     }
-    iteratorMap.put(joinToDo[0] + joinToDo[1], join);
+    iteratorMap.put(TableData.join(joinToDo[0], joinToDo[1], costOfJoin), join);
 
     // need to update the iterator list
     iteratorMap.remove(joinToDo[0]);
@@ -190,7 +196,7 @@ class Select extends TestablePlan {
     // for each table being joined
     for (Map.Entry<TableData, Iterator> entry : iteratorMap.entrySet()) {
       // save the schema for this table
-      Schema tableSchema = Minibase.SystemCatalog.getSchema(entry.getKey());
+      Schema tableSchema = entry.getKey().schema;
 
       // for all of the and predicates
       for (int i = 0; i < preds.length; i++) {
@@ -291,13 +297,13 @@ class TableData extends Object {
     return tables.toArray(new String[tables.size()]);
   }
 
-  public static TableData join(TableData left, TableData right, float reduction) {
+  public static TableData join(TableData left, TableData right, float cost) {
     TableData join = new TableData(left);
     for (String table : right.getTables()) {
-      left.addTable(table);
+      join.addTable(table);
     }
-    left.updateCost(left.cost * right.cost / reduction);
-    return left;
+    join.updateCost(cost);
+    return join;
   }
 }
 
