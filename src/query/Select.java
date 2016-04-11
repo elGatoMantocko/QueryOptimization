@@ -47,7 +47,6 @@ class Select extends TestablePlan {
       predsList.add(p);
     }
 
-    Integer[] fieldNums = new Integer[cols.length];
     // check that the predicates are valid
     try {
       // validate the query input
@@ -78,7 +77,6 @@ class Select extends TestablePlan {
       for (int i = 0; i < cols.length; i++) {
         // validate the column
         QueryCheck.columnExists(schema, cols[i]);
-        fieldNums[i] = schema.fieldNumber(cols[i]);
       }
     } catch(QueryException e){
       for (Iterator i : iteratorMap.values()) {
@@ -99,6 +97,13 @@ class Select extends TestablePlan {
 
     List<Map.Entry<TableData, Iterator>> entries = new ArrayList<>();
     entries.addAll(iteratorMap.entrySet());
+    Schema finalSchema = entries.get(0).getKey().schema;
+
+    Integer[] fieldNums = new Integer[cols.length];
+    for (int i = 0; i < cols.length; i++) {
+      fieldNums[i] = finalSchema.fieldNumber(cols[i]);
+    }
+
     if (fieldNums.length > 0) {
       finalIterator = new Projection(entries.get(0).getValue(), fieldNums);
     } else {
