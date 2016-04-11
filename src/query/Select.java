@@ -238,6 +238,8 @@ class Select extends TestablePlan {
         if (canPushSelect) {
           predsList.remove(preds[i]);
           iteratorMap.put(entry.getKey(), new Selection(iteratorMap.get(entry.getKey()), preds[i]));
+        } else if (iteratorMap.get(entry.getKey()) instanceof KeyScan || iteratorMap.get(entry.getKey()) instanceof IndexScan) {
+          // TODO: need to reset back to a filescan
         }
       }
     } // push selections
