@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -289,16 +288,16 @@ class TableData extends Object {
       this.cost == ((TableData)o).cost;
   }
 
-  public void addTable(String table) {
+  private void addTable(String table) {
     tables.add(table);
     schema = Schema.join(schema, Minibase.SystemCatalog.getSchema(table));
   }
 
-  public void updateCost(float cost) {
+  private void updateCost(float cost) {
     this.cost = cost;
   }
 
-  public String[] getTables() {
+  private String[] getTables() {
     return tables.toArray(new String[tables.size()]);
   }
 
