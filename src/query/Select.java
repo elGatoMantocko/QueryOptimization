@@ -197,18 +197,19 @@ class Select extends TestablePlan {
   }
 
   private void pushSelectionOperator(HashMap<TableData, Iterator> iteratorMap, HashMap<String, ArrayList<IndexDesc>> indexes, ArrayList<Predicate[]> predsList) {
+    Predicate[][] remainingPreds = predsList.toArray(new Predicate[predsList.size()][]);
     // for each table being joined
     for (Map.Entry<TableData, Iterator> entry : iteratorMap.entrySet()) {
       // save the schema for this table
       Schema tableSchema = entry.getKey().schema;
 
       // for all of the and predicates
-      for (int i = 0; i < preds.length; i++) {
+      for (int i = 0; i < remainingPreds.length; i++) {
         // lets build a list of all of the passable or preds
         boolean canPushSelect = true;
 
         // for all of the predicates in the or list
-        for (Predicate pred : preds[i]) {
+        for (Predicate pred : remainingPreds[i]) {
           // if the predicate is valid for the current table's schema
           //  add it to the list of or predicates to push the selection down
           if (canPushSelect = canPushSelect && pred.validate(tableSchema)) {
@@ -236,8 +237,8 @@ class Select extends TestablePlan {
         // this will build a selection using the iterator in the map
         //  if the iterator is a selection that means there is at least one and statement in the predicates
         if (canPushSelect) {
-          predsList.remove(preds[i]);
-          iteratorMap.put(entry.getKey(), new Selection(iteratorMap.get(entry.getKey()), preds[i]));
+          predsList.remove(remainingPreds[i]);
+          iteratorMap.put(entry.getKey(), new Selection(iteratorMap.get(entry.getKey()), remainingPreds[i]));
         } else if (iteratorMap.get(entry.getKey()) instanceof KeyScan || iteratorMap.get(entry.getKey()) instanceof IndexScan) {
           // TODO: need to reset back to a filescan
         }
