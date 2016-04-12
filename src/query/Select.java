@@ -312,5 +312,9 @@ class TableData extends Object {
     join.updateCost(cost);
     return join;
   }
+
+  public String toString() {
+    return Arrays.deepToString(getTables()) + " " + cost;
+  }
 }
 
