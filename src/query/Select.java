@@ -291,6 +291,11 @@ class TableData extends Object {
       this.cost == ((TableData)o).cost;
   }
 
+  @Override
+  public int hashCode() {
+    return 37 * tables.hashCode() + schema.hashCode() + Float.hashCode(cost);
+  }
+  
   private void addTable(String table) {
     tables.add(table);
     schema = Schema.join(schema, Minibase.SystemCatalog.getSchema(table));
