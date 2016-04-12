@@ -293,7 +293,7 @@ class TableData extends Object {
 
   @Override
   public int hashCode() {
-    return 37 * tables.hashCode() + schema.hashCode() + new Float(cost).hashCode();
+    return 37 * (tables.hashCode() + schema.hashCode() + new Float(cost).hashCode());
   }
   
   private void addTable(String table) {
