@@ -7,6 +7,7 @@ import index.HashIndex;
 import relop.*;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -121,60 +122,53 @@ class Select extends TestablePlan {
     float costOfJoin = Float.MAX_VALUE;
 
     Predicate[] predToJoinOn = null;
-    float costOfJoinPred = Float.MAX_VALUE;
+    float costOfJoinPred;
 
     for (int i = 0; i < fileNames.length; i++) {
       // this returns an iterator of all of the indexes on the left table
       //  with info about where it is in the table
-      float leftCost = fileNames[i].cost;
-      Schema leftSchema = fileNames[i].schema;
       for (int j = i + 1; j < fileNames.length; j++) {
         // this returns an iterator of all of the indexes on the right table
         //  with info about where it is in the table
-        float rightCost = fileNames[j].cost;
-        Schema rightSchema = fileNames[j].schema;
-
-        Schema joinedSchema = Schema.join(leftSchema, rightSchema);
+        TableData joinedData = TableData.join(fileNames[i], fileNames[j]);
+        costOfJoinPred = joinedData.cost;
+        
         // for each of the or candidates for a join predicate
         //  we need to determine which predicate works best with this particular join
         for (Predicate[] candidate : predsList) {
-          boolean valid = true;
           int reduction = 1; // for now just assume cross
-          for (Predicate pred : candidate) {
-            // check that all of the or predicats are valid on the current join
-            if (valid = valid && pred.validate(joinedSchema)) {
-              // first see if there is an index on any col in the pred
-              if ((pred.getLtype() == AttrType.COLNAME || pred.getLtype() == AttrType.FIELDNO) && 
-                  (pred.getRtype() == AttrType.COLNAME || pred.getRtype() == AttrType.FIELDNO) && 
-                  pred.getOper() == AttrOperator.EQ) {
-                // find the largest reduction factor between 10, number of keys on left, and number of keys on right
-                reduction = 10;
-              } else if ((pred.getLtype() == AttrType.COLNAME || pred.getLtype() == AttrType.FIELDNO) && 
-                  !(pred.getRtype() == AttrType.COLNAME || pred.getRtype() == AttrType.FIELDNO) && 
-                  pred.getOper() == AttrOperator.EQ) {
-                // find the largest reduction factor between 2, number of keys on left, and number of keys on right
-                reduction = 10;
-              } else if ((pred.getLtype() == AttrType.COLNAME || pred.getLtype() == AttrType.FIELDNO) && 
-                  !(pred.getRtype() == AttrType.COLNAME || pred.getRtype() == AttrType.FIELDNO) && 
-                  pred.getOper() != AttrOperator.EQ) {
-                // find the largest reduction factor between 10, number of keys on left, and number of keys on right
-                reduction = 3;
-              }
+
+          // dont count reduction for preds that are exactly the same
+          List<Predicate> distinctCand = new ArrayList<Predicate>(new HashSet<Predicate>(Arrays.asList(candidate)));
+          for (Predicate pred : distinctCand) {
+            if (!pred.validate(joinedData.schema)){
+              reduction = 1;
+              costOfJoinPred = joinedData.cost;
+              predToJoinOn = null;
+              break;
+            }
+
+            if (pred.getLtype() == AttrType.COLNAME && pred.getRtype() == AttrType.COLNAME && pred.getOper() == AttrOperator.EQ) {
+              reduction *= 10;
+            } else if (pred.getLtype() == AttrType.COLNAME && pred.getRtype() != AttrType.COLNAME && pred.getOper() == AttrOperator.EQ) {
+              reduction *= 10;
+            } else if (pred.getLtype() == AttrType.COLNAME && pred.getRtype() != AttrType.COLNAME && pred.getOper() != AttrOperator.EQ) {
+              reduction *= 3;
             }
           }
 
           // all of the or preds passed and we can use it to create a score
-          if (valid && ((float)(leftCost * rightCost) / (float)reduction) < costOfJoinPred) {
+          if (fileNames[i].cost * fileNames[j].cost / (float)reduction < costOfJoinPred) {
             predToJoinOn = candidate;
-            costOfJoinPred = (float)(leftCost * rightCost) / (float)reduction;
+            costOfJoinPred = fileNames[i].cost * fileNames[j].cost / (float)reduction;
           }
         }
 
         if (predToJoinOn == null) {
-          costOfJoinPred = leftCost * rightCost;
+          costOfJoinPred = fileNames[i].cost * fileNames[j].cost;
         }
 
-        if (costOfJoinPred < costOfJoin) {
+        if (costOfJoinPred <= costOfJoin) {
           joinToDo = new TableData[] { fileNames[i], fileNames[j] };
           costOfJoin = costOfJoinPred;
         }
@@ -188,7 +182,9 @@ class Select extends TestablePlan {
     } else {
       join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]));
     }
-    iteratorMap.put(TableData.join(joinToDo[0], joinToDo[1], costOfJoin), join);
+    TableData bestJoin = TableData.join(joinToDo[0], joinToDo[1]);
+    bestJoin.updateCost(costOfJoin);
+    iteratorMap.put(TableData.join(joinToDo[0], joinToDo[1]), join);
 
     // need to update the iterator list
     iteratorMap.remove(joinToDo[0]);
@@ -307,7 +303,7 @@ class TableData extends Object {
     schema = Schema.join(schema, Minibase.SystemCatalog.getSchema(table));
   }
 
-  private void updateCost(float cost) {
+  public void updateCost(float cost) {
     this.cost = cost;
   }
 
@@ -315,12 +311,12 @@ class TableData extends Object {
     return tables.toArray(new String[tables.size()]);
   }
 
-  public static TableData join(TableData left, TableData right, float cost) {
+  public static TableData join(TableData left, TableData right) {
     TableData join = new TableData(left);
     for (String table : right.getTables()) {
       join.addTable(table);
     }
-    join.updateCost(cost);
+    join.updateCost(left.cost * right.cost);
     return join;
   }
 
