@@ -20,7 +20,6 @@ class Select extends TestablePlan {
   private String[] tables;
   private String[] cols;
   private Predicate[][] preds;
-  private Schema schema;
   private boolean explain;
 
   private Iterator finalIterator;
@@ -35,7 +34,6 @@ class Select extends TestablePlan {
     this.tables = tree.getTables();
     this.preds = tree.getPredicates();
     this.cols = tree.getColumns();
-    this.schema = new Schema(0);
     this.explain = tree.isExplain;
 
     HashMap<String, ArrayList<IndexDesc>> indexes = new HashMap<String, ArrayList<IndexDesc>>();
@@ -49,10 +47,11 @@ class Select extends TestablePlan {
     // check that the predicates are valid
     try {
       // validate the query input
+      Schema schemaValidation = new Schema(0);
       for (String table : tables) {
         QueryCheck.tableExists(table);
         Schema tableSchema = Minibase.SystemCatalog.getSchema(table);
-        schema = Schema.join(tableSchema, schema);
+        schemaValidation = Schema.join(tableSchema, schemaValidation);
 
         // this could possibly be bad if there are multiple
         //  indexes with different names that have the same column names
@@ -70,12 +69,12 @@ class Select extends TestablePlan {
         iteratorMap.put(new TableData(table), new FileScan(tableSchema, file));
       }
 
-      QueryCheck.predicates(schema, preds);
+      QueryCheck.predicates(schemaValidation, preds);
 
       // have to convert the column names to column numbers
       for (int i = 0; i < cols.length; i++) {
         // validate the column
-        QueryCheck.columnExists(schema, cols[i]);
+        QueryCheck.columnExists(schemaValidation, cols[i]);
       }
     } catch(QueryException e){
       for (Iterator i : iteratorMap.values()) {
@@ -285,10 +284,17 @@ class TableData extends Object {
 
   @Override
   public boolean equals(Object o) {
-    return o instanceof TableData && 
-      Arrays.deepEquals(this.getTables(), ((TableData)o).getTables()) &&
-      this.schema.equals(((TableData)o).schema) &&
-      this.cost == ((TableData)o).cost;
+    if (o == null) {
+      return false;
+    } else if (!(o instanceof TableData)) {
+      return false;
+    }
+
+    TableData d = (TableData)o;
+    return 
+      Arrays.deepEquals(this.getTables(), d.getTables()) &&
+      this.schema.equals(d.schema) &&
+      new Float(this.cost).equals(new Float(d.cost));
   }
 
   @Override
