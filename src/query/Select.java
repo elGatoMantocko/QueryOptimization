@@ -143,6 +143,7 @@ class Select extends TestablePlan {
           for (Predicate pred : distinctCand) {
             if (!pred.validate(joinedData.schema)){
               reduction = 1;
+              costOfJoin = joinedData.cost;
               costOfJoinPred = joinedData.cost;
               predToJoinOn = null;
               break;
@@ -295,7 +296,14 @@ class TableData extends Object {
 
   @Override
   public int hashCode() {
-    return 37 * (tables.hashCode() + schema.hashCode() + new Float(cost).hashCode());
+    int result = 7;
+    for (String table : tables) {
+      result += table.hashCode();
+    }
+    result += schema.hashCode();
+    result += new Float(cost).hashCode();
+
+    return 37 * result;
   }
   
   private void addTable(String table) {
