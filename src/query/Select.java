@@ -3,7 +3,6 @@ package query;
 import global.*;
 import heap.HeapFile;
 import parser.AST_Select;
-import index.HashIndex;
 import relop.*;
 
 import java.util.HashMap;
@@ -193,19 +192,18 @@ class Select extends TestablePlan {
   }
 
   private void pushSelectionOperator(HashMap<TableData, Iterator> iteratorMap, HashMap<String, ArrayList<IndexDesc>> indexes, ArrayList<Predicate[]> predsList) {
-    Predicate[][] remainingPreds = predsList.toArray(new Predicate[predsList.size()][]);
     // for each table being joined
     for (TableData key : iteratorMap.keySet()) {
       // save the schema for this table
       Schema tableSchema = key.schema;
 
       // for all of the and predicates
-      for (int i = 0; i < remainingPreds.length; i++) {
+      for (Predicate[] candidate : predsList) {
         // lets build a list of all of the passable or preds
         boolean canPushSelect = true;
 
         // for all of the predicates in the or list
-        for (Predicate pred : remainingPreds[i]) {
+        for (Predicate pred : candidate) {
           // if the predicate is valid for the current table's schema
           //  add it to the list of or predicates to push the selection down
           if (!pred.validate(tableSchema)) {
@@ -219,8 +217,8 @@ class Select extends TestablePlan {
         // this will build a selection using the iterator in the map
         //  if the iterator is a selection that means there is at least one and statement in the predicates
         if (canPushSelect) {
-          predsList.remove(remainingPreds[i]);
-          iteratorMap.put(key, new Selection(iteratorMap.get(key), remainingPreds[i]));
+          predsList.remove(candidate);
+          iteratorMap.put(key, new Selection(iteratorMap.get(key), candidate));
         }
       }
     } // push selections
