@@ -195,9 +195,9 @@ class Select extends TestablePlan {
   private void pushSelectionOperator(HashMap<TableData, Iterator> iteratorMap, HashMap<String, ArrayList<IndexDesc>> indexes, ArrayList<Predicate[]> predsList) {
     Predicate[][] remainingPreds = predsList.toArray(new Predicate[predsList.size()][]);
     // for each table being joined
-    for (Map.Entry<TableData, Iterator> entry : iteratorMap.entrySet()) {
+    for (TableData key : iteratorMap.keySet()) {
       // save the schema for this table
-      Schema tableSchema = entry.getKey().schema;
+      Schema tableSchema = key.schema;
 
       // for all of the and predicates
       for (int i = 0; i < remainingPreds.length; i++) {
@@ -208,25 +208,11 @@ class Select extends TestablePlan {
         for (Predicate pred : remainingPreds[i]) {
           // if the predicate is valid for the current table's schema
           //  add it to the list of or predicates to push the selection down
-          if (canPushSelect = canPushSelect && pred.validate(tableSchema)) {
+          if (!pred.validate(tableSchema)) {
             // build keyscan on tables with indexes on a row in the pred
             //  if there is an index on the predicate's left value
-            if (indexes.containsKey(entry.getKey())) {
-              for (IndexDesc desc : indexes.get(entry.getKey())) {
-                if (pred.getLtype() == AttrType.COLNAME && desc.columnName.equals(pred.getLeft())) {
-                  HashIndex index = new HashIndex(desc.indexName);
-                  Iterator scan;
-                  if (pred.getOper() == AttrOperator.EQ) {
-                    scan = new KeyScan(tableSchema, index, new SearchKey(pred.getRight()), new HeapFile(desc.tableName));
-                  } else {
-                    scan = new IndexScan(tableSchema, index, new HeapFile(desc.tableName));
-                  }
-                  
-                  iteratorMap.get(entry.getKey()).close();
-                  iteratorMap.put(entry.getKey(), scan);
-                }
-              }
-            }
+            canPushSelect = false;
+            break;
           }
         }
         
@@ -234,9 +220,7 @@ class Select extends TestablePlan {
         //  if the iterator is a selection that means there is at least one and statement in the predicates
         if (canPushSelect) {
           predsList.remove(remainingPreds[i]);
-          iteratorMap.put(entry.getKey(), new Selection(iteratorMap.get(entry.getKey()), remainingPreds[i]));
-        } else if (iteratorMap.get(entry.getKey()) instanceof KeyScan || iteratorMap.get(entry.getKey()) instanceof IndexScan) {
-          // TODO: need to reset back to a filescan
+          iteratorMap.put(key, new Selection(iteratorMap.get(key), remainingPreds[i]));
         }
       }
     } // push selections
