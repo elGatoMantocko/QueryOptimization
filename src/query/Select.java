@@ -19,7 +19,7 @@ class Select extends TestablePlan {
   private Predicate[][] preds;
   private boolean explain;
 
-  ArrayList<Iterator> mTablesList;
+  ArrayList<TableData> mTablesList;
 
   private Iterator finalIterator;
 
@@ -45,7 +45,7 @@ class Select extends TestablePlan {
     PredicateManager pm = new PredicateManager(preds);
 
     if(finalIterator == null) {
-      finalIterator = tm.getCandidate();
+      finalIterator = tm.getCandidate().getIterator();
       pushSelection(pm);
 
     }
@@ -77,7 +77,7 @@ class Select extends TestablePlan {
   }
 
   private void joinIfPossible(TableManager tm, PredicateManager pm) {
-    Iterator joinCandidate = tm.getCandidate();
+    Iterator joinCandidate = tm.getCandidate().getIterator();
     Predicate[] joinPredicate = pm.popApplicableJoinPredicate(finalIterator, joinCandidate);
     if(joinPredicate != null)
       finalIterator = new SimpleJoin(finalIterator, joinCandidate, joinPredicate);
@@ -117,7 +117,7 @@ class Select extends TestablePlan {
 
         // create a new filescan out of the current table
         HeapFile file = new HeapFile(table);
-        mTablesList.add(new FileScan(tableSchema, file));
+        mTablesList.add(new TableData(new FileScan(tableSchema, file), table));
       }
 
       QueryCheck.predicates(schemaValidation, preds);
@@ -128,7 +128,7 @@ class Select extends TestablePlan {
         QueryCheck.columnExists(schemaValidation, cols[i]);
       }
     } catch(QueryException e){
-      mTablesList.forEach(Iterator::close);
+      mTablesList.forEach((td) -> td.getIterator().close());
       throw e;
     }
   }

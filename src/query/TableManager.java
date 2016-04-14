@@ -1,31 +1,51 @@
 package query;
 
+import global.Minibase;
+import global.Msql;
 import relop.Iterator;
 
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * Created by david on 4/14/16.
  */
 public class TableManager {
-    private final List<Iterator> mTables;
+    private final List<TableData> mTables;
 
-    Stack<Iterator> mIteratorStack;
+    Stack<TableData> mIteratorStack;
 
-    public TableManager(List<Iterator> tables) {
+    public TableManager(List<TableData> tables) {
         this.mIteratorStack = new Stack<>();
-        this.mIteratorStack.addAll(tables);
 
-        this.mTables = tables;
+        this.mTables = new ArrayList<>();
+        mTables.addAll(tables);
+        Collections.sort(this.mTables, new Comparator<TableData>() {
+            @Override
+            public int compare(TableData l, TableData r) {
+                int ltablecost = 1;
+                for (String ltable : l.getNames()) {
+                    ltablecost *= Minibase.SystemCatalog.getRecCount(ltable);
+                }
+
+                int rtablecost = 1;
+                for (String rtable : r.getNames()) {
+                    rtablecost *= Minibase.SystemCatalog.getRecCount(rtable);
+                }
+
+                return rtablecost - ltablecost ;
+            }
+        });
+
+        this.mIteratorStack.addAll(mTables);
+
     }
 
-    public List<Iterator> getTables() {
+    public List<TableData> getTables() {
         return mTables;
     }
 
 
-    public Iterator getCandidate() {
+    public TableData getCandidate() {
         return mIteratorStack.pop();
     }
 
