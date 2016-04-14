@@ -3,6 +3,7 @@ package tests;
 import global.Msql;
 import parser.TokenMgrError;
 import parser.ParseException;
+import query.Log;
 import query.QueryException;
 
 import org.junit.Assert;
@@ -10,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import relop.Tuple;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 public class SelectTest extends MinibaseTest {
@@ -56,6 +58,9 @@ public class SelectTest extends MinibaseTest {
   @Test
   public void testSelectNoTuples() throws Exception {
     List<Tuple> output = Msql.testableexecute("SELECT * FROM Foo WHERE a = 5;\nQUIT;");
+    for (Tuple tuple : output) {
+      tuple.print();
+    }
     Assert.assertTrue(0 == output.size());
   }
 

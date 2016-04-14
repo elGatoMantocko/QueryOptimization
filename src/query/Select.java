@@ -19,10 +19,10 @@ class Select extends TestablePlan {
   private Predicate[][] preds;
   private boolean explain;
 
-  private HashMap<TableData, Iterator> iteratorMap;
-  private ArrayList<Predicate[]> predsList;
+  ArrayList<Iterator> mTablesList;
 
   private Iterator finalIterator;
+
 
   /**
    * Optimizes the plan, given the parsed query.
@@ -31,20 +31,70 @@ class Select extends TestablePlan {
    */
   public Select(AST_Select tree) throws QueryException {
 
-    this.iteratorMap = new HashMap<TableData, Iterator>();
-    this.predsList = new ArrayList<Predicate[]>();
-
     this.tables = tree.getTables();
     this.preds = tree.getPredicates();
     this.cols = tree.getColumns();
     this.explain = tree.isExplain;
+    this.mTablesList = new ArrayList<>();
 
-    HashMap<String, ArrayList<IndexDesc>> indexes = new HashMap<String, ArrayList<IndexDesc>>();
+    validate(); //throws QueryException
 
-    for (Predicate[] p : preds) {
-      predsList.add(p);
+    //create a table candidate chooser
+    TableManager tm = new TableManager(mTablesList);
+    //create a predicate manager
+    PredicateManager pm = new PredicateManager(preds);
+
+    if(finalIterator == null) {
+      finalIterator = tm.getCandidate();
+      pushSelection(pm);
+
+    }
+    while(tm.hasNext()) {
+      //join on applicable pred.
+      joinIfPossible(tm, pm);
+      //push selections
+      pushSelection(pm);
     }
 
+    applyProjections();
+
+    // explaining for testing purposes
+    // finalIterator.explain(0);
+    setFinalIterator(finalIterator);
+  } // public Select(AST_Select tree) throws QueryException
+
+  private void applyProjections() {
+    Schema finalSchema = finalIterator.getSchema();
+
+    Integer[] fieldNums = new Integer[cols.length];
+    for (int i = 0; i < cols.length; i++) {
+      fieldNums[i] = finalSchema.fieldNumber(cols[i]);
+    }
+
+    if (fieldNums.length > 0) {
+      finalIterator = new Projection(finalIterator, fieldNums);
+    }
+  }
+
+  private void joinIfPossible(TableManager tm, PredicateManager pm) {
+    Iterator joinCandidate = tm.getCandidate();
+    Predicate[] joinPredicate = pm.popApplicableJoinPredicate(finalIterator, joinCandidate);
+    if(joinPredicate != null)
+      finalIterator = new SimpleJoin(finalIterator, joinCandidate, joinPredicate);
+    else
+      finalIterator = new SimpleJoin(finalIterator, joinCandidate);
+  }
+
+  private void pushSelection(PredicateManager pm) {
+    //push selections
+    Collection<Predicate[]> selectionPredicates = pm.popApplicablePredicates(finalIterator);
+    for(Predicate[] pred : selectionPredicates) {
+      finalIterator = new Selection(finalIterator, pred);
+    }
+  }
+
+  private void validate() throws QueryException {
+    HashMap<String, ArrayList<IndexDesc>> indexes = new HashMap<>();
     // check that the predicates are valid
     try {
       // validate the query input
@@ -67,7 +117,7 @@ class Select extends TestablePlan {
 
         // create a new filescan out of the current table
         HeapFile file = new HeapFile(table);
-        iteratorMap.put(new TableData(table), new FileScan(tableSchema, file));
+        mTablesList.add(new FileScan(tableSchema, file));
       }
 
       QueryCheck.predicates(schemaValidation, preds);
@@ -78,139 +128,10 @@ class Select extends TestablePlan {
         QueryCheck.columnExists(schemaValidation, cols[i]);
       }
     } catch(QueryException e){
-      for (Iterator i : iteratorMap.values()) {
-        i.close();
-      }
+      mTablesList.forEach(Iterator::close);
       throw e;
     }
-
-    while (iteratorMap.size() != 1 || predsList.size() != 0) {
-      if (predsList.size() != 0) {
-        pushSelectionOperator();
-      }
-
-      if (iteratorMap.size() != 1) {
-        pushJoinOperator();
-      }
-    }
-
-    List<Map.Entry<TableData, Iterator>> entries = new ArrayList<>();
-    entries.addAll(iteratorMap.entrySet());
-    Schema finalSchema = entries.get(0).getKey().schema;
-
-    Integer[] fieldNums = new Integer[cols.length];
-    for (int i = 0; i < cols.length; i++) {
-      fieldNums[i] = finalSchema.fieldNumber(cols[i]);
-    }
-
-    if (fieldNums.length > 0) {
-      finalIterator = new Projection(entries.get(0).getValue(), fieldNums);
-    } else {
-      finalIterator = entries.get(0).getValue();
-    }
-
-    // explaining for testing purposes
-    // finalIterator.explain(0);
-    setFinalIterator(finalIterator);
-  } // public Select(AST_Select tree) throws QueryException
-
-  private void pushJoinOperator() {
-    TableData[] tables; // = iteratorMap.keySet().toArray(new TableData[iteratorMap.keySet().size()]);
-
-    ArrayList<TableData> sortedSet = new ArrayList<>();
-    sortedSet.addAll(iteratorMap.keySet());
-    Collections.sort(sortedSet, TableData::compareTo);
-    tables = sortedSet.toArray(new TableData[iteratorMap.keySet().size()]);
-
-    Log.trace(Arrays.deepToString(tables));
-    Log.trace(Arrays.deepToString(predsList.toArray()));
-
-    int[] tablesToJoin = null;
-    int costOfJoin = Integer.MAX_VALUE;
-
-    Predicate[] finalPredToJoinOn = null;
-
-    for (int i = 0; i < tables.length; i++) {
-      for (int j = i + 1; j < tables.length; j++) {
-        TableData joinedData = TableData.join(tables[i], tables[j]);
-
-        int bestPredScore = Integer.MIN_VALUE;
-        Predicate[] predToJoinOn = null;
-
-        if (joinedData.cost < costOfJoin) {
-          costOfJoin = joinedData.cost;
-          tablesToJoin = new int[] { i, j };
-          for (Predicate[] candidate : predsList) {
-            boolean validCandidate = true;
-            int score = 0;
-
-            for (Predicate p : candidate) {
-              validCandidate = validCandidate && p.validate(joinedData.schema);
-              if (p.getOper() == AttrOperator.EQ && p.getLtype() == AttrType.COLNAME && p.getRtype() == AttrType.COLNAME) {
-                score++;
-              }
-            }
-
-            if (validCandidate && score > bestPredScore) {
-              predToJoinOn = candidate;
-              bestPredScore = score;
-            }
-          }
-
-          finalPredToJoinOn = predToJoinOn;
-        }
-      }
-    }
-
-    if (tablesToJoin == null) {
-      throw new RuntimeException("We should have found some tables to join");
-    } else {
-      int i = tablesToJoin[0];
-      int j = tablesToJoin[1];
-      SimpleJoin join;
-      if (finalPredToJoinOn != null) {
-        join = new SimpleJoin(
-            iteratorMap.get(tables[i]),
-            iteratorMap.get(tables[j]), 
-            finalPredToJoinOn
-        );
-      } else {
-        join = new SimpleJoin(
-            iteratorMap.get(tables[i]),
-            iteratorMap.get(tables[j])
-        );
-      }
-
-      predsList.remove(finalPredToJoinOn);
-
-      iteratorMap.remove(tables[i]);
-      iteratorMap.remove(tables[j]);
-
-      iteratorMap.put(TableData.join(tables[i], tables[j]), join);
-    }
   }
-
-  private void pushSelectionOperator() {
-    // for each table being joined
-    for (TableData key : iteratorMap.keySet()) {
-      // save the schema for this table
-      Schema tableSchema = key.schema;
-      ArrayList<Predicate[]> pListCopy = (ArrayList<Predicate[]>)predsList.clone();
-
-      for (Predicate[] candidate : pListCopy) {
-        boolean canPushSelect = true;
-
-        for (Predicate p : candidate) {
-          canPushSelect = canPushSelect && p.validate(tableSchema);
-        }
-
-        if (canPushSelect) {
-          predsList.remove(candidate);
-          iteratorMap.put(key, new Selection(iteratorMap.get(key), candidate));
-        }
-      }
-    }
-  } // push selections
 
   /**
    * Executes the plan and prints applicable output.
