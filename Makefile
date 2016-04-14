@@ -17,6 +17,9 @@ compile:src/*/*.java
 xx : compile
 	$(JAVA) -cp $(CLASSPATH):./bin global.Msql queries/queries.sql
 
+interactive: compile
+	$(JAVA) -cp $(CLASSPATH):./bin global.Msql
+
 test: compile
 	$(JAVA) -cp $(CLASSPATH):./bin org.junit.runner.JUnitCore tests.CreateIndexTest tests.DropIndexTest tests.InsertTest tests.UpdateTest tests.DeleteTest tests.SelectTest tests.FullLifecycleTest tests.ThreeTest
 
