@@ -37,9 +37,9 @@ INSERT INTO Grades VALUES (5, 542, 3.0);
 
 INSERT INTO Foo VALUES (1, 2, 8, 4, 5);
 INSERT INTO Foo VALUES (2, 2, 8, 4, 5);
-INSERT INTO Foo VALUES (1, 5, 3, 4, 5);
-INSERT INTO Foo VALUES (1, 4, 8, 5, 5);
-INSERT INTO Foo VALUES (1, 4, 3, 4, 6);
+INSERT INTO Foo VALUES (3, 5, 3, 4, 5);
+INSERT INTO Foo VALUES (4, 4, 8, 5, 5);
+INSERT INTO Foo VALUES (5, 4, 3, 4, 6);
 
 -------------------------------------------------------------------------------
 -- Sample Queries
@@ -67,6 +67,12 @@ SELECT name, points, title FROM Students, Grades, Courses where sid = gsid AND c
 
 explain SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;
 SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;
+
+explain SELECT * FROM Students, Grades, Courses, Foo where sid = a AND sid = gsid AND cid = gcid;
+SELECT * FROM Students, Grades, Courses, Foo where sid = a AND sid = gsid AND cid = gcid;
+
+explain SELECT * FROM Students, Grades, Courses, Foo  where sid = a AND sid = gsid AND cid = gcid AND points >= 3.0 OR sid = a AND sid = gsid AND cid = gcid AND cid >= 400;
+SELECT * FROM Students, Grades, Courses, Foo  where sid = a AND sid = gsid AND cid = gcid AND points >= 3.0 OR sid = a AND sid = gsid AND cid = gcid AND cid >= 400;
 
 STATS
 
