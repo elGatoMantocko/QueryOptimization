@@ -114,81 +114,35 @@ class Select extends TestablePlan {
   } // public Select(AST_Select tree) throws QueryException
 
   private void pushJoinOperator(HashMap<TableData, Iterator> iteratorMap, ArrayList<Predicate[]> predsList) {
-    // build the finalIterator by determining join order of the iteratorMap
-    TableData[] fileNames = iteratorMap.keySet().toArray(new TableData[iteratorMap.size()]);
-    // for each table we have to see what the join cost is for every other table
-    TableData[] joinToDo = new TableData[2];
-    float costOfJoin = Float.MAX_VALUE;
+    TableData[] tables = iteratorMap.keySet().toArray(new TableData[iteratorMap.keySet().size()]);
 
+    int[] tablesToJoin = new int[2];
+    int costOfJoin = Integer.MAX_VALUE;
+
+    int bestPredScore = 0;
     Predicate[] predToJoinOn = null;
-    float costOfJoinPred;
 
-    for (int i = 0; i < fileNames.length; i++) {
-      // this returns an iterator of all of the indexes on the left table
-      //  with info about where it is in the table
-      for (int j = i + 1; j < fileNames.length; j++) {
-        // this returns an iterator of all of the indexes on the right table
-        //  with info about where it is in the table
-        TableData joinedData = TableData.join(fileNames[i], fileNames[j]);
-        costOfJoinPred = joinedData.cost;
-        
-        // for each of the or candidates for a join predicate
-        //  we need to determine which predicate works best with this particular join
+    for (int i = 0; i < tables.length; i++) {
+      for (int j = i + 1; j < tables.length; j++) {
+        TableData joinedData = TableData.join(tables[i], tables[j]);
+
         for (Predicate[] candidate : predsList) {
-          int reduction = 1; // for now just assume cross
+          boolean validCandidate = true;
+          int score = 0;
 
-          // dont count reduction for preds that are exactly the same
-          List<Predicate> distinctCand = new ArrayList<Predicate>(new HashSet<Predicate>(Arrays.asList(candidate)));
-          for (Predicate pred : distinctCand) {
-            if (!pred.validate(joinedData.schema)){
-              reduction = 1;
-              costOfJoin = joinedData.cost;
-              costOfJoinPred = joinedData.cost;
-              predToJoinOn = null;
-              break;
-            }
-
-            if (pred.getLtype() == AttrType.COLNAME && pred.getRtype() == AttrType.COLNAME && pred.getOper() == AttrOperator.EQ) {
-              reduction *= 10;
-            } else if (pred.getLtype() == AttrType.COLNAME && pred.getRtype() != AttrType.COLNAME && pred.getOper() == AttrOperator.EQ) {
-              reduction *= 10;
-            } else if (pred.getLtype() == AttrType.COLNAME && pred.getRtype() != AttrType.COLNAME && pred.getOper() != AttrOperator.EQ) {
-              reduction *= 3;
+          for (Predicate p : candidate) {
+            validCandidate = validCandidate && p.validate(joinedData.schema);
+            if (p.getOper() == AttrOperator.EQ && p.getLtype() == AttrType.COLNAME && p.getRtype() == AttrType.COLNAME) {
+              score++;
             }
           }
 
-          // all of the or preds passed and we can use it to create a score
-          if (fileNames[i].cost * fileNames[j].cost / (float)reduction < costOfJoinPred) {
-            predToJoinOn = candidate;
-            costOfJoinPred = fileNames[i].cost * fileNames[j].cost / (float)reduction;
+          if (validCandidate && score > bestPredScore) {
+
           }
-        }
-
-        if (predToJoinOn == null) {
-          costOfJoinPred = fileNames[i].cost * fileNames[j].cost;
-        }
-
-        if (costOfJoinPred <= costOfJoin) {
-          joinToDo = new TableData[] { fileNames[i], fileNames[j] };
-          costOfJoin = costOfJoinPred;
         }
       }
     }
-
-    SimpleJoin join;
-    if (predToJoinOn != null) {
-      join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]), predToJoinOn);
-      predsList.remove(predToJoinOn);
-    } else {
-      join = new SimpleJoin(iteratorMap.get(joinToDo[0]), iteratorMap.get(joinToDo[1]));
-    }
-    TableData bestJoin = TableData.join(joinToDo[0], joinToDo[1]);
-    bestJoin.updateCost(costOfJoin);
-    iteratorMap.put(TableData.join(joinToDo[0], joinToDo[1]), join);
-
-    // need to update the iterator list
-    iteratorMap.remove(joinToDo[0]);
-    iteratorMap.remove(joinToDo[1]);
   }
 
   private void pushSelectionOperator(HashMap<TableData, Iterator> iteratorMap, HashMap<String, ArrayList<IndexDesc>> indexes, ArrayList<Predicate[]> predsList) {
@@ -230,7 +184,7 @@ class Select extends TestablePlan {
 class TableData extends Object {
   private ArrayList<String> tables;
   protected Schema schema;
-  protected float cost;
+  protected int cost;
 
   public TableData(String table) {
     this.tables = new ArrayList<>();
@@ -238,7 +192,7 @@ class TableData extends Object {
     
     this.schema = Minibase.SystemCatalog.getSchema(table);
 
-    this.cost = (float)Minibase.SystemCatalog.getRecCount(table);
+    this.cost = Minibase.SystemCatalog.getRecCount(table);
   }
 
   private TableData(TableData copy) {
@@ -262,7 +216,7 @@ class TableData extends Object {
     return 
       Arrays.deepEquals(this.getTables(), d.getTables()) &&
       this.schema.equals(d.schema) &&
-      new Float(this.cost).equals(new Float(d.cost));
+      new Integer(this.cost).equals(new Integer(d.cost));
   }
 
   @Override
@@ -272,7 +226,7 @@ class TableData extends Object {
       result += table.hashCode();
     }
     result += schema.hashCode();
-    result += new Float(cost).hashCode();
+    result += new Integer(cost).hashCode();
 
     return 37 * result;
   }
@@ -282,7 +236,7 @@ class TableData extends Object {
     schema = Schema.join(schema, Minibase.SystemCatalog.getSchema(table));
   }
 
-  public void updateCost(float cost) {
+  public void updateCost(int cost) {
     this.cost = cost;
   }
 
