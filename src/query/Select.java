@@ -160,6 +160,8 @@ class Select extends TestablePlan {
           predToJoinOn
       );
 
+      predsList.remove(predToJoinOn);
+
       iteratorMap.remove(tables[i]);
       iteratorMap.remove(tables[j]);
 
