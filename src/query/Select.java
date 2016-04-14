@@ -154,11 +154,19 @@ class Select extends TestablePlan {
     } else {
       int i = tablesToJoin[0];
       int j = tablesToJoin[1];
-      SimpleJoin join = new SimpleJoin(
-          iteratorMap.get(tables[i]),
-          iteratorMap.get(tables[j]), 
-          predToJoinOn
-      );
+      SimpleJoin join;
+      if (predToJoinOn != null) {
+        join = new SimpleJoin(
+            iteratorMap.get(tables[i]),
+            iteratorMap.get(tables[j]), 
+            predToJoinOn
+        );
+      } else {
+        join = new SimpleJoin(
+            iteratorMap.get(tables[i]),
+            iteratorMap.get(tables[j])
+        );
+      }
 
       predsList.remove(predToJoinOn);
 
