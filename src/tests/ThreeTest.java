@@ -66,4 +66,20 @@ public class ThreeTest extends MinibaseTest {
     public void testComplexThreeProj() throws Exception {
         Msql.execute("SELECT name, cid, points FROM Students, Grades, Courses where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
     }
+
+    @Test
+    public void testComplex() throws Exception {
+        Msql.execute("SELECT name, cid, points FROM Students, Grades, Courses where sid = gsid AND cid = gcid;\nQUIT;");
+    }
+
+    @Test
+    public void testCrossThreeProj() throws Exception {
+        Msql.execute("SELECT name, cid, points FROM Students, Grades, Courses where points >= 3.0 OR cid >= 400;\nQUIT;");
+    }
+
+    @Test
+    public void testSimpleFour() throws Exception {
+        Msql.execute("explain SELECT name, cid, points FROM Students, Grades, Courses, Foo where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
+        Msql.execute("SELECT name, cid, points FROM Students, Grades, Courses, Foo where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
+    }
 }

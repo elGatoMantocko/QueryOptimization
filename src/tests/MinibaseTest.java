@@ -26,6 +26,8 @@ public class MinibaseTest {
 
   @Before
   public void setUp() throws Exception {
+    PATH = System.getProperty("user.name") +Math.random()+ ".junit.minibase";
+
     // print the welcome message and load the database
     System.out.println("Minibase SQL Utility 1.0");
     if (new File(PATH).exists()) {
