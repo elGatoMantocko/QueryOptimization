@@ -16,7 +16,7 @@ import org.junit.Test;
 public class UpdateTest extends MinibaseTest {
 
   @Before
-  public void setUp() {
+  public void setUp() throws Exception {
     super.setUp();
     try {
       Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nCREATE INDEX IX_Age ON Students(Age);\nQUIT;");

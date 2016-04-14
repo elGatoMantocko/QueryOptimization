@@ -3,3 +3,6 @@
 .project
 bin
 *.minibase
+.idea
+*.iml
+out/

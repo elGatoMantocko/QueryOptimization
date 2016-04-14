@@ -20,7 +20,7 @@ import query.QueryException;
 public class DeleteTest extends MinibaseTest {
 
   @Before
-  public void setUp() {
+  public void setUp() throws Exception {
     super.setUp();
 
     try {
