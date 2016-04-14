@@ -10,46 +10,46 @@ import java.util.*;
  * Created by david on 4/14/16.
  */
 public class TableManager {
-    private final List<TableData> mTables;
+  private final List<TableData> mTables;
 
-    Stack<TableData> mIteratorStack;
+  Stack<TableData> mIteratorStack;
 
-    public TableManager(List<TableData> tables) {
-        this.mIteratorStack = new Stack<>();
+  public TableManager(List<TableData> tables) {
+    this.mIteratorStack = new Stack<>();
 
-        this.mTables = new ArrayList<>();
-        mTables.addAll(tables);
-        Collections.sort(this.mTables, new Comparator<TableData>() {
-            @Override
-            public int compare(TableData l, TableData r) {
-                int ltablecost = 1;
-                for (String ltable : l.getNames()) {
-                    ltablecost *= Minibase.SystemCatalog.getRecCount(ltable);
-                }
+    this.mTables = new ArrayList<>();
+    mTables.addAll(tables);
+    Collections.sort(this.mTables, new Comparator<TableData>() {
+      @Override
+      public int compare(TableData l, TableData r) {
+        int ltablecost = 1;
+        for (String ltable : l.getNames()) {
+          ltablecost *= Minibase.SystemCatalog.getRecCount(ltable);
+        }
 
-                int rtablecost = 1;
-                for (String rtable : r.getNames()) {
-                    rtablecost *= Minibase.SystemCatalog.getRecCount(rtable);
-                }
+        int rtablecost = 1;
+        for (String rtable : r.getNames()) {
+          rtablecost *= Minibase.SystemCatalog.getRecCount(rtable);
+        }
 
-                return rtablecost - ltablecost ;
-            }
-        });
+        return rtablecost - ltablecost ;
+      }
+    });
 
-        this.mIteratorStack.addAll(mTables);
+    this.mIteratorStack.addAll(mTables);
 
-    }
+  }
 
-    public List<TableData> getTables() {
-        return mTables;
-    }
+  public List<TableData> getTables() {
+    return mTables;
+  }
 
 
-    public TableData getCandidate() {
-        return mIteratorStack.pop();
-    }
+  public TableData getCandidate() {
+    return mIteratorStack.pop();
+  }
 
-    public boolean hasNext() {
-        return mIteratorStack.size() > 0;
-    }
+  public boolean hasNext() {
+    return mIteratorStack.size() > 0;
+  }
 }
