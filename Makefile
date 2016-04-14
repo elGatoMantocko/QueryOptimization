@@ -1,6 +1,5 @@
 JDKPATH = /usr
 LIBPATH = ./lib/bufmgr.jar:./lib/diskmgr.jar:./lib/heap.jar:./lib/index.jar:./lib/relop.jar
-JUNITPATH = /usr/share/java/junit4.jar
 
 CLASSPATH = .:..:$(LIBPATH):$(JUNITPATH)
 BINPATH = $(JDKPATH)/bin
