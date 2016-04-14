@@ -239,7 +239,7 @@ class TableData extends Object {
     this.tables = new ArrayList<>();
     this.tables.addAll(Arrays.asList(copy.getTables()));
 
-    this.schema = copy.schema;
+    this.schema = Schema.join(new Schema(0), copy.schema);
 
     this.cost = copy.cost;
   }
@@ -274,10 +274,7 @@ class TableData extends Object {
   private void addTable(String table) {
     tables.add(table);
     schema = Schema.join(schema, Minibase.SystemCatalog.getSchema(table));
-  }
-
-  public void updateCost(int cost) {
-    this.cost = cost;
+    cost *= Minibase.SystemCatalog.getRecCount(table);
   }
 
   private String[] getTables() {
@@ -289,7 +286,6 @@ class TableData extends Object {
     for (String table : right.getTables()) {
       join.addTable(table);
     }
-    join.updateCost(left.cost * right.cost);
     return join;
   }
 
