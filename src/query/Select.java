@@ -198,7 +198,7 @@ class Select extends TestablePlan {
       Schema tableSchema = key.schema;
 
       // for all of the and predicates
-      for (Predicate[] candidate : predsList) {
+      for (Predicate[] candidate : (ArrayList<Predicate[]>)predsList.clone()) {
         // lets build a list of all of the passable or preds
         boolean canPushSelect = true;
 
@@ -217,6 +217,8 @@ class Select extends TestablePlan {
         // this will build a selection using the iterator in the map
         //  if the iterator is a selection that means there is at least one and statement in the predicates
         if (canPushSelect) {
+          System.out.println(Arrays.deepToString(candidate));
+
           predsList.remove(candidate);
           iteratorMap.put(key, new Selection(iteratorMap.get(key), candidate));
         }
