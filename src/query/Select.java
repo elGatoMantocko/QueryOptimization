@@ -116,10 +116,10 @@ class Select extends TestablePlan {
   private void pushJoinOperator(HashMap<TableData, Iterator> iteratorMap, ArrayList<Predicate[]> predsList) {
     TableData[] tables = iteratorMap.keySet().toArray(new TableData[iteratorMap.keySet().size()]);
 
-    int[] tablesToJoin = new int[2];
+    int[] tablesToJoin = null;
     int costOfJoin = Integer.MAX_VALUE;
 
-    int bestPredScore = 0;
+    int bestPredScore = Integer.MIN_VALUE;
     Predicate[] predToJoinOn = null;
 
     for (int i = 0; i < tables.length; i++) {
@@ -146,6 +146,17 @@ class Select extends TestablePlan {
             }
           }
         }
+      }
+    }
+
+    if (tablesToJoin == null) {
+      throw new RuntimeException("We should have found some tables to join");
+    } else {
+      SimpleJoin join;
+      if (predToJoinOn == null) {
+        join = new SimpleJoin(iteratorMap.get(tables[tablesToJoin[0]]), iteratorMap.get(tables[tablesToJoin[1]]));
+      } else {
+        join = new SimpleJoin(iteratorMap.get(tables[tablesToJoin[0]]), iteratorMap.get(tables[tablesToJoin[1]]), predToJoinOn);
       }
     }
   }
