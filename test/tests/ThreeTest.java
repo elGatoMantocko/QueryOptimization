@@ -1,22 +1,21 @@
 package tests;
 
 import global.Msql;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import relop.Tuple;
-
-import java.util.List;
 
 /**
- * Created by david on 4/4/2016.
+ * Created by david on 4/11/16.
  */
-public class PagePinnedTest
-        extends MinibaseTest {
+public class ThreeTest extends MinibaseTest {
 
     @Before
-    public void setUp() throws Exception{
+    public void setUp() throws Exception {
         super.setUp();
+        //            Msql.execute("DROP TABLE Students;\nQUIT;");
+        //            Msql.execute("DROP TABLE Courses;\nQUIT;");
+        //            Msql.execute("DROP TABLE Grades;\nQUIT;");
+        //            Msql.execute("DROP TABLE Foo;\nQUIT;");
 
         Msql.execute("CREATE TABLE Students (sid INTEGER, name STRING(50), age FLOAT);\nQUIT;");
         Msql.execute("CREATE TABLE Courses (cid INTEGER, title STRING(50));\nQUIT;");
@@ -50,46 +49,33 @@ public class PagePinnedTest
     }
 
     @Test
-    public void testSimpleSelect() throws Exception {
-        List<Tuple> output = Msql.testableexecute("SELECT * FROM Foo;\nQUIT;");
-        Msql.execute("DROP TABLE Foo;\nQUIT;");
+    public void testSimpleThree() throws Exception {
+        Msql.execute("SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid;\nQUIT;");
     }
 
     @Test
-    public void testComplexSelect() throws Exception {
-        List<Tuple> output = Msql.testableexecute(
-                "SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0 OR sid = gsid AND points <= 2.5;\nQUIT;");
-        Msql.execute("DROP TABLE Students;\nQUIT;");
+    public void testComplexThree() throws Exception {
+        Msql.execute("SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
     }
 
     @Test
-    public void testCreateIndex() throws Exception {
-        List<Tuple> output = Msql.testableexecute("CREATE INDEX IX_Name ON Students(Name);\nQUIT;");
-        Msql.execute("DROP TABLE Students;\nQUIT;");
+    public void testComplexThreeProj() throws Exception {
+        Msql.execute("SELECT name, cid, points FROM Students, Grades, Courses where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
     }
 
     @Test
-    public void test1() throws Exception {
-        Msql.execute("CREATE INDEX IX_Name ON Students(Name);\n" +
-                "DROP INDEX IX_Name;\n" +
-                "DROP TABLE Students;\n" +
-                "QUIT;");
+    public void testComplex() throws Exception {
+        Msql.execute("SELECT name, cid, points FROM Students, Grades, Courses where sid = gsid AND cid = gcid;\nQUIT;");
     }
 
     @Test
-    public void test2() throws Exception {
-        Msql.execute("CREATE INDEX IX_Name ON Students(Name);\n" +
-                "SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0 OR sid = gsid AND points <= 2.5;\n" +
-                "DROP INDEX IX_Name;\n" +
-                "DROP TABLE Students;\n" +
-                "QUIT;");
+    public void testCrossThreeProj() throws Exception {
+        Msql.execute("SELECT name, cid, points FROM Students, Grades, Courses where points >= 3.0 OR cid >= 400;\nQUIT;");
     }
 
     @Test
-    public void test3() throws Exception {
-        Msql.execute("CREATE INDEX IX_Name ON Students(Name);\n" +
-                "DESCRIBE Students;\n" +
-                "DROP TABLE Students;\n" +
-                "QUIT;");
+    public void testSimpleFour() throws Exception {
+        Msql.execute("explain SELECT name, cid, points FROM Students, Grades, Courses, Foo where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
+        Msql.execute("SELECT name, cid, points FROM Students, Grades, Courses, Foo where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
     }
 }

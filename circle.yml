@@ -3,6 +3,7 @@ machine:
         version: oraclejdk8
 test:
     post:
+        - make
         - make test
         # - mkdir -p $CIRCLE_TEST_REPORTS/junit/
         # - find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;

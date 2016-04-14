@@ -1,17 +1,12 @@
 package tests;
 
 import global.Msql;
-import parser.TokenMgrError;
-import parser.ParseException;
-import query.Log;
-import query.QueryException;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import relop.Tuple;
 
-import java.lang.reflect.Array;
 import java.util.*;
 
 public class SelectTest extends MinibaseTest {
