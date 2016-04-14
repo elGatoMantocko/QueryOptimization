@@ -113,6 +113,7 @@ class Select extends TestablePlan {
     setFinalIterator(finalIterator);
   } // public Select(AST_Select tree) throws QueryException
 
+<<<<<<< Updated upstream
   private void pushJoinOperator(HashMap<TableData, Iterator> iteratorMap, ArrayList<Predicate[]> predsList) {
     // build the finalIterator by determining join order of the iteratorMap
     TableData[] fileNames = iteratorMap.keySet().toArray(new TableData[iteratorMap.size()]);
@@ -154,6 +155,44 @@ class Select extends TestablePlan {
               reduction *= 10;
             } else if (pred.getLtype() == AttrType.COLNAME && pred.getRtype() != AttrType.COLNAME && pred.getOper() != AttrOperator.EQ) {
               reduction *= 3;
+=======
+  private void pushJoinOperator() {
+    TableData[] tables = iteratorMap.keySet().toArray(new TableData[iteratorMap.keySet().size()]);
+
+    int[] tablesToJoin = null;
+    int costOfJoin = Integer.MAX_VALUE;
+
+    Predicate[] finalPredToJoinOn = null;
+
+    for (int i = 0; i < tables.length; i++) {
+      for (int j = i + 1; j < tables.length; j++) {
+        Log.trace("Starting to check tables " + tables[i].toString() +", "+ tables[j].toString());
+        TableData joinedData = TableData.join(tables[i], tables[j]);
+
+        int bestPredScore = Integer.MIN_VALUE;
+        Predicate[] predToJoinOn = null;
+
+        if (joinedData.cost < costOfJoin) {
+          Log.trace("This pair has a smaller cost");
+          costOfJoin = joinedData.cost;
+          tablesToJoin = new int[] { i, j };
+          Log.trace("checking predicates...");
+          for (Predicate[] candidate : predsList) {
+            boolean validCandidate = true;
+            int score = 0;
+
+            for (Predicate p : candidate) {
+              validCandidate = validCandidate && p.validate(joinedData.schema);
+              if (p.getOper() == AttrOperator.EQ && p.getLtype() == AttrType.COLNAME && p.getRtype() == AttrType.COLNAME) {
+                score++;
+              }
+            }
+
+            if (validCandidate && score > bestPredScore) {
+              Log.trace("Found a better predicate. " + Arrays.toString(predToJoinOn));
+              predToJoinOn = candidate;
+              bestPredScore = score;
+>>>>>>> Stashed changes
             }
           }
 
