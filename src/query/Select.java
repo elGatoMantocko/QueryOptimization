@@ -196,35 +196,22 @@ class Select extends TestablePlan {
     for (TableData key : iteratorMap.keySet()) {
       // save the schema for this table
       Schema tableSchema = key.schema;
+      ArrayList<Predicate[]> pListCopy = (ArrayList<Predicate[]>)predsList.clone();
 
-      // for all of the and predicates
-      for (Predicate[] candidate : (ArrayList<Predicate[]>)predsList.clone()) {
-        // lets build a list of all of the passable or preds
+      for (Predicate[] candidate : pListCopy) {
         boolean canPushSelect = true;
 
-        // for all of the predicates in the or list
-        for (Predicate pred : candidate) {
-          // if the predicate is valid for the current table's schema
-          //  add it to the list of or predicates to push the selection down
-          if (!pred.validate(tableSchema)) {
-            // build keyscan on tables with indexes on a row in the pred
-            //  if there is an index on the predicate's left value
-            canPushSelect = false;
-            break;
-          }
+        for (Predicate p : candidate) {
+          canPushSelect = canPushSelect && p.validate(tableSchema);
         }
-        
-        // this will build a selection using the iterator in the map
-        //  if the iterator is a selection that means there is at least one and statement in the predicates
-        if (canPushSelect) {
-          System.out.println(Arrays.deepToString(candidate));
 
+        if (canPushSelect) {
           predsList.remove(candidate);
           iteratorMap.put(key, new Selection(iteratorMap.get(key), candidate));
         }
       }
-    } // push selections
-  }
+    }
+  } // push selections
 
   /**
    * Executes the plan and prints applicable output.
