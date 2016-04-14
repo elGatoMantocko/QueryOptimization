@@ -152,12 +152,18 @@ class Select extends TestablePlan {
     if (tablesToJoin == null) {
       throw new RuntimeException("We should have found some tables to join");
     } else {
-      SimpleJoin join;
-      if (predToJoinOn == null) {
-        join = new SimpleJoin(iteratorMap.get(tables[tablesToJoin[0]]), iteratorMap.get(tables[tablesToJoin[1]]));
-      } else {
-        join = new SimpleJoin(iteratorMap.get(tables[tablesToJoin[0]]), iteratorMap.get(tables[tablesToJoin[1]]), predToJoinOn);
-      }
+      int i = tablesToJoin[0];
+      int j = tablesToJoin[1];
+      SimpleJoin join = new SimpleJoin(
+          iteratorMap.get(tables[i]),
+          iteratorMap.get(tables[j]), 
+          predToJoinOn
+      );
+
+      iteratorMap.remove(tables[i]);
+      iteratorMap.remove(tables[j]);
+
+      iteratorMap.put(TableData.join(tables[i], tables[j]), join);
     }
   }
 
