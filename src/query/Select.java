@@ -22,6 +22,9 @@ class Select extends TestablePlan {
   private Predicate[][] preds;
   private boolean explain;
 
+  private HashMap<TableData, Iterator> iteratorMap;
+  private ArrayList<Predicate[]> predsList;
+
   private Iterator finalIterator;
 
   /**
@@ -31,14 +34,15 @@ class Select extends TestablePlan {
    */
   public Select(AST_Select tree) throws QueryException {
 
+    this.iteratorMap = new HashMap<TableData, Iterator>();
+    this.predsList = new ArrayList<Predicate[]>();
+
     this.tables = tree.getTables();
     this.preds = tree.getPredicates();
     this.cols = tree.getColumns();
     this.explain = tree.isExplain;
 
     HashMap<String, ArrayList<IndexDesc>> indexes = new HashMap<String, ArrayList<IndexDesc>>();
-    HashMap<TableData, Iterator> iteratorMap = new HashMap<TableData, Iterator>();
-    ArrayList<Predicate[]> predsList = new ArrayList<Predicate[]>();
 
     for (Predicate[] p : preds) {
       predsList.add(p);
@@ -85,11 +89,11 @@ class Select extends TestablePlan {
 
     while (iteratorMap.size() != 1 || predsList.size() != 0) {
       if (predsList.size() != 0) {
-        pushSelectionOperator(iteratorMap, indexes, predsList);
+        pushSelectionOperator();
       }
 
       if (iteratorMap.size() != 1) {
-        pushJoinOperator(iteratorMap, predsList);
+        pushJoinOperator();
       }
     }
 
@@ -113,18 +117,20 @@ class Select extends TestablePlan {
     setFinalIterator(finalIterator);
   } // public Select(AST_Select tree) throws QueryException
 
-  private void pushJoinOperator(HashMap<TableData, Iterator> iteratorMap, ArrayList<Predicate[]> predsList) {
+  private void pushJoinOperator() {
     TableData[] tables = iteratorMap.keySet().toArray(new TableData[iteratorMap.keySet().size()]);
 
     int[] tablesToJoin = null;
     int costOfJoin = Integer.MAX_VALUE;
 
-    int bestPredScore = Integer.MIN_VALUE;
-    Predicate[] predToJoinOn = null;
+    Predicate[] finalPredToJoinOn = null;
 
     for (int i = 0; i < tables.length; i++) {
       for (int j = i + 1; j < tables.length; j++) {
         TableData joinedData = TableData.join(tables[i], tables[j]);
+
+        int bestPredScore = Integer.MIN_VALUE;
+        Predicate[] predToJoinOn = null;
 
         if (joinedData.cost < costOfJoin) {
           costOfJoin = joinedData.cost;
@@ -145,6 +151,8 @@ class Select extends TestablePlan {
               bestPredScore = score;
             }
           }
+
+          finalPredToJoinOn = predToJoinOn;
         }
       }
     }
@@ -155,11 +163,11 @@ class Select extends TestablePlan {
       int i = tablesToJoin[0];
       int j = tablesToJoin[1];
       SimpleJoin join;
-      if (predToJoinOn != null) {
+      if (finalPredToJoinOn != null) {
         join = new SimpleJoin(
             iteratorMap.get(tables[i]),
             iteratorMap.get(tables[j]), 
-            predToJoinOn
+            finalPredToJoinOn
         );
       } else {
         join = new SimpleJoin(
@@ -168,7 +176,7 @@ class Select extends TestablePlan {
         );
       }
 
-      predsList.remove(predToJoinOn);
+      predsList.remove(finalPredToJoinOn);
 
       iteratorMap.remove(tables[i]);
       iteratorMap.remove(tables[j]);
@@ -177,7 +185,7 @@ class Select extends TestablePlan {
     }
   }
 
-  private void pushSelectionOperator(HashMap<TableData, Iterator> iteratorMap, HashMap<String, ArrayList<IndexDesc>> indexes, ArrayList<Predicate[]> predsList) {
+  private void pushSelectionOperator() {
     // for each table being joined
     for (TableData key : iteratorMap.keySet()) {
       // save the schema for this table

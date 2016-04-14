@@ -62,7 +62,7 @@ SELECT * FROM Students, Grades WHERE sid = gsid AND age = 30.0;
 explain SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid;
 SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid;
 
-explain SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid;
+explain SELECT name, points, title FROM Students, Grades, Courses where sid = gsid AND cid = gcid;
 SELECT name, points, title FROM Students, Grades, Courses where sid = gsid AND cid = gcid;
 
 explain SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;
