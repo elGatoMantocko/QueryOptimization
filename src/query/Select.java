@@ -126,19 +126,24 @@ class Select extends TestablePlan {
       for (int j = i + 1; j < tables.length; j++) {
         TableData joinedData = TableData.join(tables[i], tables[j]);
 
-        for (Predicate[] candidate : predsList) {
-          boolean validCandidate = true;
-          int score = 0;
+        if (joinedData.cost < costOfJoin) {
+          costOfJoin = joinedData.cost;
+          tablesToJoin = new int[] { i, j };
+          for (Predicate[] candidate : predsList) {
+            boolean validCandidate = true;
+            int score = 0;
 
-          for (Predicate p : candidate) {
-            validCandidate = validCandidate && p.validate(joinedData.schema);
-            if (p.getOper() == AttrOperator.EQ && p.getLtype() == AttrType.COLNAME && p.getRtype() == AttrType.COLNAME) {
-              score++;
+            for (Predicate p : candidate) {
+              validCandidate = validCandidate && p.validate(joinedData.schema);
+              if (p.getOper() == AttrOperator.EQ && p.getLtype() == AttrType.COLNAME && p.getRtype() == AttrType.COLNAME) {
+                score++;
+              }
             }
-          }
 
-          if (validCandidate && score > bestPredScore) {
-
+            if (validCandidate && score > bestPredScore) {
+              predToJoinOn = candidate;
+              bestPredScore = score;
+            }
           }
         }
       }
