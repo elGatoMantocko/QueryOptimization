@@ -27,7 +27,7 @@ interactive: compile
 	$(JAVA) -cp $(CLASSPATH):./bin global.Msql
 
 test: testcompile
-	$(JAVA) -cp $(CLASSPATH):./bin org.junit.runner.JUnitCore tests.CreateIndexTest tests.DropIndexTest tests.InsertTest tests.UpdateTest tests.DeleteTest tests.SelectTest tests.FullLifecycleTest tests.ThreeTest
+	$(JAVA) -cp $(CLASSPATH):./bin org.junit.runner.JUnitCore tests.CreateIndexTest tests.DropIndexTest tests.InsertTest tests.UpdateTest tests.DeleteTest tests.SelectTest tests.FullLifecycleTest
 
 clean:
 	rm -rf *.minibase bin
