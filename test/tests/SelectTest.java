@@ -53,89 +53,100 @@ public class SelectTest extends MinibaseTest {
   @Test
   public void testSelectNoTuples() throws Exception {
     List<Tuple> output = Msql.testableexecute("SELECT * FROM Foo WHERE a = 5;\nQUIT;");
-    for (Tuple tuple : output) {
-      tuple.print();
-    }
-    Assert.assertTrue(0 == output.size());
+    Assert.assertEquals("Expected different number of tuples", 0, output.size());
   }
 
   @Test
   public void testSimpleSelectAll() throws Exception {
     List<Tuple> output = Msql.testableexecute("SELECT * FROM Foo;\nQUIT;");
-    Assert.assertTrue(0 < output.size());
+    Assert.assertEquals("Expected different number of tuples", 5, output.size());
   }
 
   @Test
   public void testSimpleSelectProject() throws Exception {
     List<Tuple> output = Msql.testableexecute("SELECT a FROM Foo;\nQUIT;");
-    Assert.assertTrue(0 < output.size());
+    Assert.assertEquals("Expected different number of tuples", 5, output.size());
+    for (Tuple t : output) {
+      Assert.assertEquals("Expected different number of tuples", 1, t.getAllFields().length);
+    }
   }
 
   @Test
   public void testSimpleSelectSinglePred() throws Exception {
     List<Tuple> output = Msql.testableexecute("SELECT * FROM Foo WHERE a = 1;\nQUIT;");
-    Assert.assertTrue(0 < output.size());
+    Assert.assertEquals("Expected different number of tuples", 4, output.size());
   }
 
   @Test
   public void testSimpleSelectAndPred() throws Exception {
     List<Tuple> output = Msql.testableexecute("SELECT * FROM Foo WHERE a = 1 AND b = 2;\nQUIT;");
-    Assert.assertTrue(0 < output.size());
+    Assert.assertEquals("Expected different number of tuples", 1, output.size());
   }
 
   @Test
   public void testSelectCrossOneAndPred() throws Exception {
     List<Tuple> output = Msql.testableexecute("SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0;\nQUIT;");
-    Assert.assertTrue(0 < output.size());
+    // this will throw an exception and fail if the projection is wrong
+    for (Tuple t : output) {
+      t.getField("sid");
+      t.getField("name");
+      t.getField("points");
+    }
+    Assert.assertEquals("Expected different number of tuples", 3, output.size());
   }
 
   @Test
   public void testSelectCrossWithOrPred() throws Exception {
     List<Tuple> output = Msql.testableexecute("SELECT sid, name, points FROM Students, Grades WHERE sid = gsid AND points >= 3.0 OR sid = gsid AND points <= 2.5;\nQUIT;");
-    Assert.assertTrue(0 < output.size());
+    Assert.assertEquals("Expected different number of tuples", 4, output.size());
   }
 
   @Test
   public void testSelectFooComplexPred() throws Exception {
     List<Tuple> output = Msql.testableexecute("SELECT * FROM Foo WHERE a = 1 and b = 2 or c = 3 and d = 4 and e = 5;\nQUIT;");
-    Assert.assertTrue(0 < output.size());
+    Assert.assertEquals("Expected different number of tuples", 2, output.size());
   }
 
   @Test
   public void testSelectStudentsGradesAge() throws Exception {
     List<Tuple> output = Msql.testableexecute("SELECT * FROM Students, Grades WHERE sid = gsid AND age = 30.0;\nQUIT;");
-    Assert.assertTrue(0 < output.size());
+    Assert.assertEquals("Expected different number of tuples", 2, output.size());
   }
 
   @Test
   public void testSimpleThree() throws Exception {
-    Msql.execute("SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid;\nQUIT;");
+    List<Tuple> output = Msql.testableexecute("SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid;\nQUIT;");
+    Assert.assertEquals("Expected different number of tuples", 5, output.size());
   }
 
   @Test
   public void testComplexThree() throws Exception {
-    Msql.execute("SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
+    List<Tuple> output = Msql.testableexecute("SELECT * FROM Students, Grades, Courses where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
+    Assert.assertEquals("Expected different number of tuples", 4, output.size());
   }
 
   @Test
   public void testComplexThreeProj() throws Exception {
-    Msql.execute("SELECT name, cid, points FROM Students, Grades, Courses where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
+    List<Tuple> output = Msql.testableexecute("SELECT name, cid, points FROM Students, Grades, Courses where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
+    Assert.assertEquals("Expected different number of tuples", 4, output.size());
   }
 
   @Test
   public void testComplex() throws Exception {
-    Msql.execute("SELECT name, cid, points FROM Students, Grades, Courses where sid = gsid AND cid = gcid;\nQUIT;");
+    List<Tuple> output = Msql.testableexecute("SELECT name, cid, points FROM Students, Grades, Courses where sid = gsid AND cid = gcid;\nQUIT;");
+    Assert.assertEquals("Expected different number of tuples", 5, output.size());
   }
 
   @Test
   public void testCrossThreeProj() throws Exception {
-    Msql.execute("SELECT name, cid, points FROM Students, Grades, Courses where points >= 3.0 OR cid >= 400;\nQUIT;");
+    List<Tuple> output = Msql.testableexecute("SELECT name, cid, points FROM Students, Grades, Courses where points >= 3.0 OR cid >= 400;\nQUIT;");
+    Assert.assertEquals("Expected different number of tuples", 65, output.size());
   }
 
   @Test
   public void testSimpleFour() throws Exception {
-    Msql.execute("explain SELECT name, cid, points FROM Students, Grades, Courses, Foo where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
-    Msql.execute("SELECT name, cid, points FROM Students, Grades, Courses, Foo where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
+    List<Tuple> output = Msql.testableexecute("SELECT name, cid, points FROM Students, Grades, Courses, Foo where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
+    Assert.assertEquals("Expected different number of tuples", 20, output.size());
   }
 }
 
