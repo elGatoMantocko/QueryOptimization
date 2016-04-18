@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import relop.Tuple;
+import query.QueryException;
 
 import java.util.*;
 
@@ -147,6 +148,21 @@ public class SelectTest extends MinibaseTest {
   public void testSimpleFour() throws Exception {
     List<Tuple> output = Msql.testableexecute("SELECT name, cid, points FROM Students, Grades, Courses, Foo where sid = gsid AND cid = gcid AND points >= 3.0 OR sid = gsid AND cid = gcid AND cid >= 400;\nQUIT;");
     Assert.assertEquals("Expected different number of tuples", 20, output.size());
+  }
+  
+  @Test (expected=QueryException.class)
+  public void testSelectInvalidTable() throws Exception {
+    Msql.execute("SELECT * FROM Grades, Bad;\nQUIT");
+  }
+  
+  @Test (expected=QueryException.class)
+  public void testSelectInvalidColumn() throws Exception {
+    Msql.execute("SELECT sid, bad FROM Grades, Students;\nQUIT");
+  }
+  
+  @Test (expected=QueryException.class)
+  public void testSelectInvalidPredicates() throws Exception {
+    Msql.execute("SELECT * FROM Foo, Grades WHERE a = 1 OR points = 0.0 OR bad = 5;\nQUIT");
   }
 }
 
