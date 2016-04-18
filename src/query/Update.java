@@ -58,7 +58,7 @@ class Update implements Plan {
     int rowCount = 0;
     while (scan.hasNext()) {
       Tuple t = scan.getNext();
-      Tuple updatedTup = new Tuple(schema, t.getData());
+      Tuple updatedTup = new Tuple(schema, t.getData().clone());
 
       // first find the tuple to update
       boolean andPasses = true;
@@ -81,7 +81,7 @@ class Update implements Plan {
 
         file.updateRecord(scan.getLastRID(), updatedTup.getData());
 
-        for (IndexDesc desc : Minibase.SystemCatalog.getIndexes(fileName)) {
+        for (IndexDesc desc : Minibase.SystemCatalog.getIndexes(fileName, schema, fieldnos)) {
           HashIndex index = new HashIndex(desc.indexName);
           index.deleteEntry(new SearchKey(t.getField(desc.columnName)), scan.getLastRID());
           index.insertEntry(new SearchKey(updatedTup.getField(desc.columnName)), scan.getLastRID());
