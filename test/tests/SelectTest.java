@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import relop.Tuple;
+import query.QueryException;
 
 import java.util.*;
 
@@ -105,6 +106,21 @@ public class SelectTest extends MinibaseTest {
   public void testSelectStudentsGradesAge() throws Exception {
     List<Tuple> output = Msql.testableexecute("SELECT * FROM Students, Grades WHERE sid = gsid AND age = 30.0;\nQUIT;");
     Assert.assertTrue(0 < output.size());
+  }
+  
+  @Test (expected=QueryException.class)
+  public void testSelectInvalidTable() throws Exception {
+    Msql.execute("SELECT * FROM Grades, Bad;\nQUIT");
+  }
+  
+  @Test (expected=QueryException.class)
+  public void testSelectInvalidColumn() throws Exception {
+    Msql.execute("SELECT sid, bad FROM Grades, Students;\nQUIT");
+  }
+  
+  @Test (expected=QueryException.class)
+  public void testSelectInvalidPredicates() throws Exception {
+    Msql.execute("SELECT * FROM Foo, Grades WHERE a = 1 OR points = 0.0 OR bad = 5;\nQUIT");
   }
 }
 
