@@ -5,9 +5,9 @@ Our query optimizer is designed with a modified left deep join in mind. Tables a
 
 ## Building and Running
 
-Our project includes necessary dependencies to run junit tests as well as running all queries in the queries.sql file. 
+Our project includes necessary dependencies to run junit tests as well as running all queries in the `queries.sql` file. 
 
-To run the commands in the queries.sql file, simply run `make`. Feel free to place whatever test queries you may have into that file. 
+To run the commands in the `queries.sql` file, simply run `make`. In order to run your tests, replace the `queries.sql` file. If necessary, the Makefile can be changed to run whatever other files you need, but we recommend simply replacing the `queries.sql`.
 
 In addition, we have JUnit support. The jars for junit (and its dependencies) are included in the lib folder. To run out Junit test suite use `make test`. 
 
