@@ -15,3 +15,6 @@ If you would like to run the db interactively, `make interactive` can be used.
 
 `make clean` is also available if needed. 
 
+## Pitfalls
+
+Our database has a few sore spots. Mainly, if three tables of the same size are joined, it is possible that a cross join will occur if the tables are listed in the incorrect order. For example joining A, B, C where A relates to B and B relates to C, it is possible that A and C will be crossjoined rather than joining A to B then to C. However this is unlikely in practice. 
