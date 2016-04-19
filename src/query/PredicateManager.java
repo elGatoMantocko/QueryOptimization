@@ -2,6 +2,7 @@ package query;
 
 import global.AttrOperator;
 import global.AttrType;
+import global.Minibase;
 import relop.Iterator;
 import relop.Predicate;
 import relop.Schema;
@@ -79,5 +80,27 @@ public class PredicateManager {
       }
     }
     return predToJoinOn;
+  }
+
+  public Collection<Predicate[]> popIndexEqualitiesFor(TableData tableData) {
+    if(tableData.getNames().length > 1) throw new IllegalArgumentException("There cannot be a tabledata with two tablenames but no iterator");
+    String tableName = tableData.getNames()[0];
+    IndexDesc[] indexes = Minibase.SystemCatalog.getIndexes(tableName);
+    Schema schema = Minibase.SystemCatalog.getSchema(tableName);
+
+    Collection<Predicate[]> toReturn = new ArrayList<>();
+
+    for (Predicate[] predicates : mPredicates) {
+      boolean isValid = true;
+      for(Predicate pred : predicates) {
+        isValid = pred.validate(schema) && pred.getOper() == AttrOperator.EQ && pred.getLtype() == AttrType.COLNAME && pred.getRtype() != AttrType.COLNAME;
+        if(!isValid) break;
+      }
+      if(isValid) {
+        mPredicatesList.remove(predicates);
+        toReturn.add(predicates);
+      }
+    }
+    return toReturn;
   }
 }

@@ -35,17 +35,16 @@ class Select extends TestablePlan {
     this.preds = tree.getPredicates();
     this.cols = tree.getColumns();
     this.explain = tree.isExplain;
-    this.mTablesList = new ArrayList<>();
 
     validate(); //throws QueryException
 
     //create a table candidate chooser
-    TableManager tm = new TableManager(mTablesList);
+    TableManager tm = new TableManager(tables);
     //create a predicate manager
     PredicateManager pm = new PredicateManager(preds);
 
     if(finalIterator == null) {
-      finalIterator = tm.getCandidate().getIterator();
+      finalIterator = tm.getCandidate(pm).getIterator();
       pushSelection(pm);
 
     }
@@ -77,7 +76,7 @@ class Select extends TestablePlan {
   }
 
   private void joinIfPossible(TableManager tm, PredicateManager pm) {
-    Iterator joinCandidate = tm.getCandidate().getIterator();
+    Iterator joinCandidate = tm.getCandidate(pm).getIterator();
     Predicate[] joinPredicate = pm.popApplicableJoinPredicate(finalIterator, joinCandidate);
     if(joinPredicate != null)
       finalIterator = new SimpleJoin(finalIterator, joinCandidate, joinPredicate);
@@ -117,7 +116,6 @@ class Select extends TestablePlan {
 
         // create a new filescan out of the current table
         HeapFile file = new HeapFile(table);
-        mTablesList.add(new TableData(new FileScan(tableSchema, file), table));
       }
 
       QueryCheck.predicates(schemaValidation, preds);
@@ -144,6 +142,5 @@ class Select extends TestablePlan {
       finalIterator.execute();
     }
   } // public void execute()
-
 } // class Select implements Plan
 
