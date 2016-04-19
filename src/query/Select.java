@@ -126,7 +126,6 @@ class Select extends TestablePlan {
         QueryCheck.columnExists(schemaValidation, cols[i]);
       }
     } catch(QueryException e){
-      mTablesList.forEach((td) -> td.getIterator().close());
       throw e;
     }
   }
