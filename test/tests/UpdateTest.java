@@ -85,6 +85,25 @@ public class UpdateTest extends MinibaseTest {
   }
 
   @Test
+  public void testUpdateAllRows() {
+    try {
+      Msql.execute("UPDATE Students SET name = 'Test';\nQUIT;");
+    } catch(ParseException | TokenMgrError | QueryException e){
+      e.printStackTrace();
+    } 
+
+    HeapFile file = new HeapFile("Students");
+    FileScan scan = new FileScan(Minibase.SystemCatalog.getSchema("Students"), file);
+
+    while (scan.hasNext()) {
+      Tuple t = scan.getNext();
+      Assert.assertEquals("The name should be set to \'Test\'", "Test", t.getField("name"));
+    }
+
+    scan.close();
+  }
+
+  @Test
   public void testUpdateNoRows() {
     try {
       Msql.execute("UPDATE Students SET sid = 10 WHERE name = 'Elliott';\nQUIT;");

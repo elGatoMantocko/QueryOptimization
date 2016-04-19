@@ -117,6 +117,7 @@ SELECT * FROM Foo, Grades WHERE a = 1 OR points = 0.0 OR bad = 5;
 DESCRIBE Students;
 
 UPDATE Students SET sid = 5 WHERE name = 'Chris';
+UPDATE Students SET name = 'Test';
 
 DELETE Students WHERE name = 'Chris';
 
