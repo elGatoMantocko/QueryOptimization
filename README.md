@@ -1,6 +1,6 @@
 # David and Elliott's Query Optimizer
 
-Our query optimizer is designed with a modified left deep join in mind. Tables are sorted and joined together in size order from smallest to greatest to avoid rapid growth.
+Our query optimizer is designed with a modified left deep join in mind. Tables are sorted and joined together in size order from smallest to greatest to avoid rapid growth. As records are inserted and deleted, we maintain statistics on the number of records in the relation and be sure to update the appropriate index if one exists. Similarly, when records are updated, the values in the index would need to be updated appropriately as well.
 
 
 ## Building and Running
@@ -14,3 +14,4 @@ In addition, we have JUnit support. The jars for junit (and its dependencies) ar
 If you would like to run the db interactively, `make interactive` can be used. 
 
 `make clean` is also available if needed. 
+
