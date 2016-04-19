@@ -21,7 +21,7 @@ testcompile:src/*/*.java test/*/*.java
 	$(JAVAC) -cp $(CLASSPATH) -d ./bin ./src/*/*.java ./test/*/*.java
 
 xx : compile
-	$(JAVA) -cp $(CLASSPATH):./bin global.Msql queries/queries.sql
+	$(JAVA) -cp $(CLASSPATH):./bin global.Msql queries.sql
 
 interactive: compile
 	$(JAVA) -cp $(CLASSPATH):./bin global.Msql
